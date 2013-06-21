@@ -1,0 +1,485 @@
+\documentclass[a4paper,10pt]{article}
+\usepackage{graphicx}
+
+%opening
+\title{AdlinkIODS}
+\author{Ramon Su\~{n}\'{e}}
+
+\begin{document}
+
+\maketitle
+
+\begin{abstract}
+
+This information is for DEVELOPERS only.
+
+The most up-to-date version of this document can be found in ALBA controls01
+SVN:
+\verb|trunk/tango_ds/Acquisition/AdlinkIODS/doc/devel/AdlinkIODS.latex|
+
+There are some extra documents that are worth reading too.
+
+You should have read user's quick start guide before reading this:
+\verb|trunk/tango_ds/Acquisition/AdlinkIODS/QuickStart.txt|
+
+\end{abstract}
+
+\tableofcontents
+
+
+\section{Overview}
+
+
+This device server handles Analog Input, Analog Output and DigitalIO of most
+Adlink analog input/output boards. Adlink has two families of boards with
+different APIs: D2K-DASK and PSDASK. This device server supports both.
+
+It exports two classes:
+\begin{itemize}
+	\item \textbf{AdlinkAIO}: Implements the Tango Abstract AnalogDAQ providing
+		AI and AO capabilities. One instance of AdlinkAIO can only control AI
+		or AO, not both of the same board. If a card has support to do both
+		at once, then two AdlinkAIO instances can run in the same server so
+		each one controls a different part (AI or AO) of the board.
+
+	\item \textbf{AdlinkDIO}: Implements the Tango Abstract DigitalIO. The
+		server is intended for controlling Analog boards, but most of them
+		also have some DIO capabilities.
+
+		This part has not been tested extensively, only with a few boards, but
+		it should be easy to extend it to support others as well.
+
+		This documentation is centered in the AdlinkAIO class. Take a look
+ 		at DigitalDIO documentation if you are interested in understanding
+		the AdlinkDIO class.
+\end{itemize}
+
+
+\section{C++ Classes overview}
+
+There are various families of classes:
+
+\begin{itemize}
+
+	\item	\textbf{AdlinkBase hierarchy}: Most classes in this DS are
+			derived from AdlinkBase. It is just a way to provide all of
+			them with useful streams similar to the ones provided by
+			\verb|DEBUG_STREAM| in Tango...
+
+			One of these streams is
+			just accumulated and can be retrieved using
+			\verb|status_warn_string|. Tango device reads it and puts it
+			in \verb|Status| attribute, thus providing an easy way for the
+			objects to put information there.
+
+			Also supplies a way to throw exceptions that just wrapps Tango.
+			So, the Tango dependency could be easily removed in order to
+			test the classes in a non-Tango environment.
+
+	\item	\textbf{BaseBehaviour hierarchy}: The \verb|AdlinkIAO| class
+			implements an abstract class valid for AI and AO. Initially both
+			analog input and analog output were developed by different people
+			and without a clear design in the same class and it became a mess.
+			To clear things a bit, they finally were separated.
+
+			The Tango abstract class \verb|AnalogDAQ| defines a property
+			to choose if you want to use the device for input or for output,
+			so both cases have to be implemented in \verb|AdlinkAIO|.
+			It would probably be a better idea to have two different
+			Tango classes, \verb|AnalogAI| and \verb|AnalogAO|,
+			but that's the way it is.
+			
+			To solve it, \verb|AdlinkAIO| does implement ``nothing''
+			but just passes the calls to another equivalent abstract interface
+			\textbf{BaseBehaviour}. Then the code for Input and for
+			Output can be separated in different implementations:
+			\textbf{InputBehaviour} and \textbf{OutputBehaviour}.
+
+			\begin{center}
+			\includegraphics[scale=0.5]
+										{../doxygen/html/classBaseBehaviour.png}
+			\end{center}
+
+			\verb|BaseBehaviour| owns a \verb|DevicePartInterface|, this
+			is an actual device.
+			
+			There are some classes that assist BaseBehaviour:
+			\begin{center}
+			\includegraphics[scale=0.3]
+										{./dia/classes4}
+			\end{center}
+			\begin{itemize}
+				\item	\textbf{AttributeBuffers}: Stores the
+						temporary buffers needed by tango. The internal buffers
+						used by \verb|InputBehaviour| and \verb|OutputBehaviour|
+						are not well suited for Tango, as there the contents
+						of different channels are mixed up and the values are
+						stored in adlink-specific bitfield language instead
+						of volt values. Also, we cannot really know exactly
+						for how long will tango be reading the buffer, while
+						we would like to lock the internal buffers while
+						getting new data. So, values must be copied to
+						something Tango-friendly, this is just a container
+						for all the values for all the attributes.
+				\item \textbf{TriggerMode} and \textbf{RangeCheck}: Not really
+						that usefull in the end, just provide means to check
+						the rightness of TriggerMode and ranges.
+
+				\item	\textbf{SharedBuffer}:
+						It is in fact a bunch of different buffers. I will
+						call these buffers buckets.
+						A thread can ask for read access to some of the
+						buckets. One bucket can be read by various threads.
+						Only one thread has write access, and the
+						written bucket can not be read until it finishes.
+
+						SharedBuffer has several 'buckets', buffers of the same
+						size as a half of doubleBuf. It allows multiple threads
+						reading any bucket and only one thread writing one
+						bucket.
+
+				\item \textbf{CircularPosition}: just
+						controls which is the last written bucket by the
+						write thread, so SharedBuffer becomes a circular buffer
+						and readers know were to find the latest data written.
+
+						The bucket in the shared buffer is not random, but
+						linear: we fill it as a circular buffer. The bucket ID
+						to be written next is maintained by \break
+						\verb|CircularPosition InputBehaviour::m_bufferPosition|
+						.
+
+						This value mutex protected and also used by the read
+						thread to know which are the buckets to read(we always
+						want to read the last ones that have been written).
+
+						\begin{verbatim}
+							CircularPosition p
+						
+						write thread:
+							p = cp.current()
+							write_in_position(p)
+							cp.go_next()
+						
+						read_thread:
+							p = cp.last() (returns current - 1 )
+						\end{verbatim}
+			\end{itemize}
+
+
+	\item	\textbf{DevicePartInterface hierarchy}: We support different boards
+			operating on different libraries. To simplify
+			\verb|InputBehaviour|, it does not operate directly on the API
+			calls but on another interface \verb|InputDeviceInterface|
+			which abstracts the API code. Analog
+			Output and DigitalIO have still not been ported to an equivalent
+			interface (they have ``if''s to select the API call), but a very 
+			basic \verb|OutputDeviceInterface| is defined until this day arrives.
+			They are all \textbf{DevicePartInterface}s.
+
+			There are two implementations of \verb|InputDeviceInterface|,
+			for D2K and PSDASK.
+
+			\begin{center}
+			\includegraphics[scale=0.5]
+								{../doxygen/html/classDevicePartInterface.png}
+			\end{center}
+
+
+	\item	\textbf{CommonDeviceInterface hierarchy}: We have separated \break
+			\verb|AnalogInputInterface| from \verb|AnalogOutputInterface|,
+			but they affect the same device. In one server you can have various
+			\verb|AdlinkAIO| devices:
+			one controlling the analog output part and one controlling the
+			input of a device for example. Some devices have some parts, like
+			special counters that can have a meaning for both Input or Output.
+			That's were \textbf{CommonDeviceInterface} (and its D2K and PSDASK
+			implementations) come. It is intended to decide which device
+			(the first to ask for them) has control over these common features.
+
+			\verb|CommonDeviceInterface| does not provide a common
+			interface to these board specific features. \verb|InputDeviceD2K|
+ 			will be connected for sure to a \verb|CommonDeviceD2K| device,
+			so it is this more specific device who provides the interface.
+
+			\verb|CommonDeviceInterface| plays a central role in device
+			initialization.
+
+			\begin{center}
+			\includegraphics[scale=0.5]
+								{../doxygen/html/classCommonDeviceInterface.png}
+			\end{center}
+
+	\item	\textbf{DeviceInterface hierarchy}: Both DevicePartInterface and
+			CommonDeviceInterface are DeviceInterface.
+
+			\begin{center}
+			\includegraphics[scale=0.4]
+									{../doxygen/html/classDeviceInterface.png}
+			\end{center}
+
+			\verb|DevicePartInterface| has a pointer to the
+			\verb|CommonDeviceInterface| to
+			which it depends (it is just a part of a common device!). So
+			children in its' hierarchy can access the common device, as
+			was already stated in previous point.
+
+			\begin{center}
+			\includegraphics[scale=0.3] {./dia/classes3}
+			\end{center}
+
+	\item	\textbf{AdlinkDeviceFactorySingleton} It handles all allocation and
+			deallocation of DeviceInterface hierachy. You should never create
+			or destroy any ob these objects outside. See section
+			\ref{sec:AdlinkDeviceFactorySingleton}
+	
+\end{itemize}
+
+
+
+\section{Initialization - AdlinkDeviceFactorySingleton}
+\label{sec:AdlinkDeviceFactorySingleton}
+
+AdlinkDeviceFactorySingleton has two purposes:
+\begin{itemize}
+
+	\item	Singleton access to Adlink device handlers. It provides wrapper 
+			functions to register and deregister Adlink devices, which can
+			be called multiple times per process. This allows the same process
+			to open a device
+			multiple times... but asking for different modes. These are:
+			Analogic and Digital. There's no posterior control if after
+			requesting a device for Analog access, you perform digital
+			operation. But it can obviously lead to troubles.
+
+			Teoretically it's not exact anymore. Now 
+			AdlDeviceFactorySingleton::get()
+			returns a DevicePartInterface, so DeviceInputInterface when asked
+			for input rights, or DeviceOutputInterface, and so... This way
+			you have access only to the interface you have requested.
+
+			The problem is Analog Output and Digital still do not have a real
+			interface and use handler() directly, so they can still use
+			functions that are not allowed...
+
+			Remember, we get() DevicePartInterface, and when we are done we
+			must release() them too. \textbf{This class handles all
+			initialization and deallocation of ANY DeviceInterface object}.
+
+			A server used to be able to open different boards. Because of
+			Adlink libraries deficient signal management this is not allowed
+			anymore, and the factory is responsible of not allowing you
+			to do so. If it let you, Adlink would not complain, but
+			weird behaviour may occur.
+
+	\item	Centralized information about cards. AdlinkIODS manages lots of
+			different Adlink cards. AdlBoardParams is a structure that reflects
+			the different capabilities of each board. Just edit
+			\verb|AdlinkDeviceManager.cpp| to add support for new Adlink
+			boards to the device.
+
+\end{itemize}
+
+
+
+
+
+\section{Continuous Input Acquisition}
+
+It may suffer overrun problems, especially when reading the acquired value
+continuously. Now, for this it's making up to 3 copies of all the buffer in
+the process.
+
+If you are not going te read the data while acquiring you can set property
+\verb|UseSharedBuffer| to ``false''. For example, if you
+want a continuous acquisition that stops when a certain external condition
+occurs, just to check what has happened in the last moments before this
+trigger.
+
+
+There are two flows of AnalogInput, the polling thread based and the
+callback signals based.
+The callback based is preferred (You can use \verb|UseCallbackSignals| to
+disable it) but not all acquisition modes support it. Even more, PSDASK boards
+do not support it at all.
+
+This is the typical case workflow:
+
+\begin{center}
+ \includegraphics[scale=0.3]{./dia/acquisition}
+\end{center}
+
+\begin{itemize}
+	\item	\textbf{Green}:
+			The adlink API is reading data and puts it in a buffer reserved
+			by the appropiate \verb|InputDeviceInterface|.
+
+			Driver supports single or double buffer. This means that in
+			continuous acquisition mode this buffer will be overwritten soon.
+			That's why it should be copied in the shared buffer. With this
+			we get not only a double buffer, but a N-ble buffer.
+
+			If we don't mind loosing this information, see the property
+			``UseSharedBuffer''.
+
+	\item	\textbf{Yellow}: We will be notified of the availability of new
+			data by the driver by polling a special function in a thread
+			or by configuring a callback in the driver itself. This is
+			\verb|thread_continuous_ai| or \verb|on_half_ready_callback|.
+
+			Both then call \verb|save_half_buffer|, that does:
+			\begin{itemize}
+				\item Call \verb|copy_half_buffer| to move data from the
+					driver buffer (ej \verb|InputDeviceD2K::m_doubleBuf|) to
+					the shared buffer. This will not be done if
+					\verb|SharedBuffer| is disabled.
+				\item Call \verb|push_change_events| Will do exactly this, push
+					change events if they are enabled. To do this it will
+					behave like an attribute read from Tango, but in the same
+					thread instead of another.
+			\end{itemize}
+
+
+	\item	\textbf{Red}: When the corresponding attribute is read from Tango,
+			we make a copy of \verb|sharedBuffer| into
+			\verb|spectrumChannelValues| (In \verb|AttributeBuffers|), which is
+			the buffer that is presented to Tango. It will then copy the buffer
+			again over the network, but that's another story...
+
+			If \verb|SharedBuffer| is disabled it will try to copy data
+			directly from driver memory to \verb|spectrumChannelValues|.
+ 			It may not be possible, then \verb|copy_half_buffer| will be
+ 			run now. So, if we disable \verb|SharedBuffer| each time there's
+ 			a new value, it is still possible that we have to use it when
+ 			reading. If reading is not common, it may be worth it. The
+ 			possibility of completely bypassing \verb|SharedBuffer| depends
+ 			on the board type.
+
+			\verb|spectrumChannelValues| is not a raw copy, but it also
+			adapts the format, to print volts instead of bits and arranges
+			the data to get just one channel and not all them messed up...
+\end{itemize}
+
+
+
+\section{Miscellaneous notes}
+
+\begin{itemize}
+
+	\item	If you have problems when loading an AdlinkIODS, make sure that the
+			AutoStart property is set to false. If it keeps failing,
+			it's an important problem. Else you can try to change the
+			attributes and then start. Don't set AutoStart to true until
+			all the attributes are allright!
+
+	\item	Don't set OnBoardBuffer $<$ NumOfChannels, nor OnBoardBuffer not
+			divisible by NumOfChannels, it may cause problems.
+
+	\item	Driver supports doubleBuffer. The 2 buffers are defined on the
+			beginning of the acquisition, you can't change what will be the
+			next buffer while acquiring (or at least it's not documented if
+			it's possible).
+
+	\item	So, if we want to acquire more data than the max size of the buffer
+			``doubleBuffer'', which is the size of the internal board buffer
+			(FIFO) we have to write our own N-pleBuffer. That's called
+			SharedBuffer.
+
+	\item	If we give direct access to the sharedBuffer to Tango, we are
+			loosing the thread safety, don't we? There's no way to keep
+			this buffer locked (because tango does not inform me when data
+			transmission is completed, I won't be able to unlock!). So, write
+			thread may overwrite the buffer while tango is reading it, which
+			is something I don't think should happen...
+			Tango may read the same part
+			of the buffer that the yellow thread is reading. QUESTIONS: Does
+			Tango make another copy of it before sending or sends directly what
+			I have set to the attribute value? If it makes a copy, is it really
+			fast? We know that write position in SharedBuffer is not random but
+			lineal. So, maybe we can make a very large SharedBuffer (not just
+			enough buckets for storing requested data, but ?5? times this size)
+			and assume the writer process will never reach data being written
+			by other threads, so we can erase synchronization code and the
+			spectrumChanelValues copy... That would help reduce device overruns
+			(less cpu time lost, so more time for the important copy, and less
+			mutex locks) while being continuously polled by Tango.
+
+	\item	There are a couple of problems for the idea above. The first is:
+			Tango wants a continuous array, but the shared buffer is circular.
+			It can be easily solved: work as described above if the positions
+			to read from the SharedBuffer are continuous, or use the old copy
+			method if we have to read 'broken' bucket sequences, example in a
+			SharedBuffer sized=32 where we are interested in the last 8 buckets
+			and last written bucket is 4: [29,30,31,32,1,2,3,4]
+
+	\item	Another problem is format: The raw acquisition format is not what
+			we want to show as the attribute value: The raw format has mangled
+			values for different channels! And values are in special format,
+			not in Volts! To solve this, we can make the transformations before
+			storing the result in SharedBuffer... but then we are making the
+			yellow thread, the one that has to run faster to avoid overruns,
+			slower.
+
+	\item	When we are using callbacks to read the data, it may be a good idea
+			to push change events from the device server itself, so we don't
+			need an external polling for this. See \verb|push_change_event| and
+			\verb|set_change_event|. The problem is, you must give
+			\verb|push_change_event|
+			the new attribute value. So, even if nobody is really whishing to
+			read these events we must move data from the internal buffer to
+			the one that has the format Tango expects it to have, for all the
+			channels. It may be a lot. That's why there's a property
+			to completely disable it. Another idea: push another attribute
+			change event, the attribute could be a counter of read buffers.
+			The client subscribed to this could then say, ah, ok then I will
+			also take that data. But to plot this we would need to do a special
+			widget which different than the pure tau plot widget...
+			Another idea: A property to specify the only attributes you want
+			them to send the event.. But this does not sound very maintainable,
+			you must remember if you want to subscribe to an event of an
+			attribute you have to touch a property, which is not standard
+			in any way.
+			
+			Current implementation is: You can push events on
+			\verb|CXX_LastValue| and/or on \verb|CXX_ChannelValues|,
+			and this is configurable using two properties. And it's not
+			just for callback reading, when doing it by internal polling
+			it also makes sense!
+
+	\item	ToDo: Overruns are completely ignored now, maybe the buffer should
+			be ALARMed or something if there has been an overrun during the
+			time any of his buckets was being read.
+
+	\item	ToDo: Now \verb|get_mean()| supports making the mean of esoteric
+			ranges, not just the last bucket, but it is not configurable
+			from the device server. Maybe we could also make it configurable
+			differently for each channel.
+
+			Before allowing the user to set this, though, we should
+			implement a way to cache the mean of a bucket, so we don't have to
+			recalculate all each time.
+			
+\end{itemize}
+
+
+\subsection{About adapt\_buffer\_size}
+\label{sec:adapt_buffer_size}
+
+An attribute of the device is the buffer size per channel, and another is the
+number of channels. When it's time to make an acquisition we can know the total
+buffer size we need to store that data. If the size is lower than on board FIFO,
+then there's no problem, set it as the size of the doubleBuffer size and set at
+least 1 bucket to SharedBuffer. But if it's greater, we have to use the full
+FIFO size for the double buffer and calculate how many buckets we need in the
+SharedBuffer object. We will probably have to increase the bufSize with these
+constraints:
+
+\begin{verbatim}
+bufSize = chBufSize * nCh if bufSize < FIFO
+else
+bufSz % FIFOSz = 0
+BufSz % nCh == 0
+>>> bufSz % mcm(fifoSz, nChn) == 0
+\end{verbatim}
+
+\end{document}

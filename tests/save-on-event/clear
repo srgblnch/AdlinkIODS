@@ -1,0 +1,6 @@
+
+rm -fr results
+rm -f *.pyc
+rm -f *~
+
+

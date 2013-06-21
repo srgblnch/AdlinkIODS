@@ -1,0 +1,8 @@
+<br />This is not mean to be used anymore, but I keep it here for my future reference.<br /><br />
+<h2>AdlinkIODS/AdlinkDIOD2K</h2>
+<p><b>NOT USEFUL ANYMORE, NOW AdlinkAIO and AdlinkDIO have the sources together.</b> AdlinkDIOD2K depends on AdlinkIODS, both must be on the same server. The makefiles read some environment variables you should set.<br /></p>
+<h3>Build AdlinkIODS as a library:</h3>
+<ol><li>Define TANGO_HOME, OMNI_HOME, DASK_HOME(Adlink libraries).<br /></li><li>Get the AnalogDAQ abstract sources (CVS: tango_ds/AbstractClasses/AnalogDAQ) and install them. Define SUPER_HOME pointing to it.<br /></li><li>Get the AdlinkIODS sources(CVS: dio/tango_ds/Acquisition/AdlinkIODS). Define DESTLIB_HOME, to point to where you want to build the library.</li><li>make lib</li></ol>
+<h3>Build AdlinkIODS/AdlinkDIOD2K server:</h3>
+<ol><li>Define TANGO_HOME, OMNI_HOME, DASK_HOME(Adlink libraries).</li><li>Get the DIO abstract sources (CVS: tango_ds/InputOutput/DigitalIO/DIO) and install them(follow it's instructions). Define SUPER_HOME pointing to it.<br /></li><li>Get the AdlinkDIOD2K sources (CVS: tango_ds/InputOutput/DigitalIO/dioAdlinkD2K)</li><li>Define D2KDEVICE_HOME, pointing to the location of the AdlinkIODS library ($DESTLIB_HOME used to build AdlinkIODS )</li><li>Define AIOABSTRACT_HOME, pointing to the location of the AnalogDAQ abstract ($SUPER_HOME used to build AdlinkIODS)</li><li>make<br /></li></ol>
+You can also just copy some files from AdlinkIODS project(AdlinkDeviceManager.*) and modify ClassFactory.cpp if you don't want access to the Analog ports, but then you probably don't want an analog board and should take a look at another one, like Adlink 7248, 7432 or 7300.<br /><br />

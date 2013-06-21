@@ -1,0 +1,168 @@
+
+################################################################################
+################################################################################
+              SIGNAL CALLBAKCS NOTES AND IMPLEMENTATION
+################################################################################
+################################################################################
+
+ - A device server can work with only ONE PHYSICAL device. It can have more
+   than one virtual device if they are input and output part of the same
+   physical device. Because they must share interrupts, and even if they don't
+   need to they will (see note on Register_Card)
+ - Previous paragraph also applies if one device is PCI and the other D2K. they
+   use (even just registering) the same interrupt numbers so are uncompatible.
+ - Polling compatability must be preserved in InputBehavior, because PCI does
+   not support signals for AIO.
+ - It seems that HalfBuffer signal does not like me to tell it I have
+   D2K_AI_AsyncDblBufferHandled() this buffer, but it prefers to think it is 
+   handled when the interrupt handler ends. This means I cannot use the same
+   code path with callbacks and without them. My idea was to use the same path,
+   but changing the "loop until new half buffer is ready" part for a mutex.wait,
+   which would then be mutex.post() by the signal handler.
+ - Adlink won't send a second DoubleBufferReady signal while the first one
+   is being processed. It will set overrun flag to 1 instead.
+ - It seems that HalfBuffer signal does not like me to ask for overruns very
+   much. In exactly one of each 3 callback executions I'm notifyed with an
+   overrun. 1 of each 4 if I do the D2K_AI_AsyncDblBufferHandled. If I do
+   clear the overrun flag each time, even if it's not active when I do it,
+   the problem disappears, and only real overruns are shown. So, instead of:
+     if get_overrun(): clear_overrun();
+   I must do:
+     get_overrun(); clear_overrun();
+   At the cost that if there's really an overrun between get and clear, I may
+   loose it.
+ - Signals do not run in a special thread but in the same thread the code runs.
+   So, I cannot mutex.wait() in a signal handler for some mutex.post() in the
+   thread, as it will simply never happen.
+ - If a second signal arrives while operating the first one, the first will
+   be paused until the second handler is completed. This means that I must also
+   be sure about mutex.wait() and mutex.post() between signal handlers.
+ - Signals can be blocked. A blocked signal won't be ignored, it will just
+   be delayed until it's unblocked.
+ - I got some wierd problems with omni semaphores in trying to synchronize
+   threads by waking up semaphores from signal handlers. (The semaphore would
+   refuse to sleep a second time after getting awake once).
+
+**********************
+
+ - SharedBuffer for write is needed from HalfBuffer handler and AICompleted
+   handler. SharedBuffer implementation assumes only one thread will be
+   write accessing so it's not handling properly the case in which an
+   AICOmpleted signal arrives while HB signal hadler has the write access.
+   To solve this I added a mutex to get write acces, but it's not the correct
+   solution because signals are not new threads but run in the same one,
+   and the HalfBuf one won't continue until the AIComple handler finishes, so
+   we get a Deadlock.
+   
+   It's solved by blocking AICompleted signals while processing another
+   signal, before acquiring the Sharedbuffer lock. (It's done in
+   InputDeviceD2K::__callbackDispatcher ). Blocked signals are not lost,
+   will be run as soon as they are unlocked again.
+   
+   By the way, since with this trick access to shared buffer is ensured
+   to be sequential again, the problematic mutex is not needed anymore, so
+   it is disabled now.
+
+ - But what if the AICompleted signal arrives very fast, Before the other
+   handler reaches the safe zone (where AICompleted signal is blocked)?
+   Then AICompleted will be processed before HalfBufferReady!
+   
+   If we receive an AICompleted signal, we change the device state. And
+   that's the first thing that the HalfBufReady signal handler checks when
+   it reaches the safe zone. If the state is not running anymore, we know
+   that the AICompleted signal handler has already been run and has already
+   got all remaining data from the device, including this half buffer
+   ( as the HalfBufferReady handler had not finished when the AICompleted ran,
+   it's considered an unread half buffer by the adlink API when the 
+   AICompleted handler asks for the last remaining data ). So, if this is
+   the case, the HalfBufferReady handler just ends without doing anything.
+
+################################################################################
+################################################################################
+                   API PARTS RELEVANT TO SIGNALS
+################################################################################
+################################################################################
+
+WARNING: In Register_Card and D2K_Register_Card, one of the things they do is
+         change all defined sigactions for signals 57-62!! So, we cannot use
+         multiple devices in the same server (Initialization of one, would kill
+         signal settings for the others, even if that one does not need to
+         rely in signals!)
+
+********************************************************************************
+ D2K
+********************************************************************************
+
+# D2K AI
+SIGDBAI,
+SIGEVENT1
+
+# D2K AO
+SIGEVENT2
+SIGEVENT3
+SIGEVENT4
+SIGDBAO
+
+adlsys.h
+#define SIGEVENT1		59
+#define SIGEVENT2		60
+#define SIGEVENT3		61
+#define SIGEVENT4		62
+#define SIGDBAI                 58
+#define SIGDBAO                 57
+
+
+I16  D2K_AI_EventCallBack (U16 wCardNumber, I16 mode, I16 EventType, void (*callbackAddr)(int));
+
+	EventType for AI: DAQEnd, DBEvent, TrigEvent
+
+
+I16 D2K_AO_EventCallBack (U16 wCardNumber, I16 mode, I16 EventType, void (*callbackAddr)(int));
+
+	EventType for typical AO: DAQEnd, DBEvent, DATrigEvent
+	EventType for DAQ-2501/2502 AO: DAQEnd, DBEvent_{A,B,AB}, DATrigEvent_{A,B,AB}
+
+
+/* D2K_DIO_SetDualInterrupt(U16 wCardNumber, I16 wInt1Mode, I16 wInt2Mode, HANDLE *hEvent) */
+
+
+
+
+********************************************************************************
+ PCI
+********************************************************************************
+
+  PCI: Here AnalogIO does not have signals, just DIO and it's not enough
+       beautiful. So, I have to keep compaibility with polling AIO.
+
+# PCI DI
+SIGEVENT3
+SIGDBI
+
+# PCI DIO
+SIGEVENT1
+SIGEVENT2
+SIGEVENT3
+SIGEVENT4
+
+Adlsys.h
+#define SIGEVENT1   61
+#define SIGEVENT2   62
+#define SIGEVENT3   60
+#define SIGEVENT4   59
+#define SIGDBI      58
+#define SIGDBO      57 (never used..)
+
+I16 DI_EventCallBack (U16 CardNumber, I16 mode, I16 EventType, void (*callbackAddr)(int));
+
+I16 DIO_7300SetInterrupt(U16 wCardNumber, I16 AuxDIEn, I16 T2En, \
+    void (*event1_handler)(int), void (*event2_handler)(int));
+
+I16 DIO_SetCOSInterrupt(U16 wCardNumber, U16 Port, U16 ctlA, U16 ctlB, \
+    U16 ctlC)
+
+I16 DIO_SetDualInterrupt(U16 wCardNumber, I16 wInt1Mode, I16 wInt2Mode, \
+    void (*event1_handler)(int), void (*event2_handler)(int))
+
+I16 DIO_SetCOSInterrupt32(U16 wCardNumber, U8 Port, U32 ctl, \
+    void (*event_handler)(int))

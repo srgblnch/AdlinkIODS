@@ -1,0 +1,197 @@
+THINGS TO BE DONE .. URGENT!!!!
+----------------------------------------------------------------------------------------------------------------------------------------------
+Analog Input:
+
+Analog Output:
+
+Both:
+
+HW Performance:
+	IT SEEMS THAT THERE IS A PROBLEM RECEIVING INTERRUPTS WHEN THE PROGRAM IS MULTITHREADED!!!!!!!!!!!!!
+	Fix and Solve it !!!
+	Conmutation when changing DC Values.
+	The DC Values conmutation should be in a ramp format (GUI can do it?)
+	How the problems are solved inside the AdLink library done by Soleil?
+
+GUI:
+	GUI should read the initial status of the device servers and show it in the screen
+	Behaviour of SET and RUNNING/STOP buttons must be related to it.
+	Why the waveform is written two times??
+
+Later stage:
+	Use the last Dynamic Attributes template allowing alias for each attribute.
+	
+
+DOCUMENTATION: AdlinkIODS Class
+----------------------------------------------------------------------------------------------------------------------------------------------
+General Behaviour of the device (AIO):
+	The Device Server manages both Analog Inputs and Outputs using an isInput boolean property. 
+	AdlinkIODS [DS] is an interface between Tango and the BaseBehavior [HW] c++ object. This has two implementations: InputBehavior and OutputBehavior.
+	The values set for properties and some attributes are used to configure the hardware device. However, some of them are ignored.
+	Each physical channel is stored in a different line of the rawData array.
+	Data attributes are dynamic, the property NumOfChannels determine the number of attributes to be created.
+	DevDouble Cxx_ChannelValues is a Read/Write Spectrum for each channel, uses read/write_ChannelSpectrum()
+	DevDouble Cxx_LastValue is a Read/Write Scalar for each channel, uses read/write_ScalarValue(), when reading gives the last value of the channel spectrum, when writing it overwrites all the values of the spectrum. 
+	RawData and DoubleData attributes allow to read the full buffer image using binary or double formats.
+	Conversion between binary and voltage is HW dependant and done in the AdlinkDevice c++ object.
+
+Attributes/Commands pending to be implemented:
+	BufferedChannels
+	AutoStart  ---> I think it should be a property instead of an attribute
+	Filename/importFile/exportFile: these methods are not compatible with the same format used by the RF gui.
+
+
+State Machine:
+	by default:
+		STANDBY
+	if STANDBY && start():
+		RUNNING (acquisition running)
+	if RUNNING && !AdlinkDevice.adl_check()==0:
+		ON (acquisition finished)
+	if (ON || RUNNING) && AdlinkDevice.start()<0:
+		FAULT
+	if stop():
+		STANDBY
+
+Properties used to configure the Hardware (They cannot be changed at runtime):
+	BoardId
+	BoardType
+	#DynamicRange
+	IsInput
+	#MaxSampleRate
+	#MaxSourceRange
+	NumOfChannels
+	Onboardbuffer
+	There are now new properties to fine-tune the behaviour, check them in QuickStart.txt
+Attributes used to configure the Hardware (They can be changed in the STANDBY state):
+	ChannelBufferSize
+	NumOfShots
+	SampleRate
+
+DOCUMENTATION: AdlinkDevice Class
+----------------------------------------------------------------------------------------------------------------------------------------------
+...
+
+About the Abstract Class and Dynamic Attribute Generation:
+----------------------------------------------------------------------------------------------------------------------------------------------
+Thinks modified between the Class and the implementation:
+	- RawData and DoubleData are R/W in ON State and only Read in RUNNING State
+	- Lines commented in AdlinkIODSClass.cpp:
+		//att_list.push_back(scalar_value);
+		//att_list.push_back(channel_spectrum);
+	- Added generic creators for dynamic attributes in AdlinkIODSClass.h:
+		ChannelSpectrumAttrib():SpectrumAttr("ChannelSpectrum", Tango::DEV_DOUBLE, Tango::READ_WRITE, 10000000) {};
+		ChannelSpectrumAttrib(const char *name, long data_type, Tango::AttrWriteType w_type, long s_size):SpectrumAttr(name,data_type,w_type,s_size) {};
+		ScalarValueAttrib():Attr("ScalarValue", Tango::DEV_DOUBLE, Tango::READ_WRITE) {};
+		ScalarValueAttrib(const char *name, long data_type, Tango::AttrWriteType w_type):Attr(name,data_type,w_type) {};
+
+	It has been deleted at the end of AdlinkIODSClass.cpp:
+        //  Put inheritance
+        Tango::DbDatum  inher_datum("InheritedFrom");
+        vector<string> inheritance;
+        inheritance.push_back("AnalogDAQ");
+        inheritance.push_back("Device_3Impl");
+        inher_datum << inheritance;
+        data.push_back(inher_datum);
+	
+CODE ADDED FOR DYNAMIC ATTRIBUTE GENERATION:
+code at the end of void AdlinkIODSClass::device_factory(const Tango::DevVarStringArray *devlist_ptr)
+
+
+Things to be solved:
+----------------------------------------------------------------------------------------------------------------------------------------------
+
+	Why the fuck is not possible to manage 6 channels? 4 and 8 seem fine!
+		It could be a problem with the predefined arguments for the configuration/start methods
+	-> Solved alone?
+		It was a problem related to ABGroup configuration, it only can use asymmetric numbers of channels if FIFOLoad is used (don't ask me why)
+
+	Remember that MultiChannel has not been implemented yet for any application!!!!
+	When implemented add to this list:
+		- 2502 Output!
+		- 2205 Scalar Input
+		- ...
+
+	TO RESTART OR NOT TO RESTART:
+		How to manage the mix between waveform generation and DC sets?
+			D2K_Release should not be executed!!!!
+			State Manage more complicated then!
+		-> SEE NOTES ABOUT IT BELOW
+	
+		For the moment one SetOutput sets a waveform of equal samples
+		Then, it's not possible to change Set values w/out restarting Waveforms!!!
+		Ask if this is valid!: It is!, for the moment ...
+			PowerDAQ Server does the same
+			BufferedChannelsList can be used to get the same effect:
+				If it's empty and ChannelBufferSize>1, all are buffered
+				If a list exist, only this channels are buffered and the rest are singlePoint values
+				This attribute should be memorized!
+		ADD THIS BUFFERED LIST BEHAVIOUR IN THE FUTURE!!!
+
+	When importing file size of file can be greater than buffersize? can be less? must be just?
+
+	Be EFFICIENT!!!! DO NOT UPDATE BUFFER SIZES IF IS NOT NECESSARY! MELLON!
+
+
+	When an attribute is NotAllowedInThisState it should affect to the Writing of the attribute, Not The Reading!!!
+		- Modify the Abstract Class, make attributes Allowed and launch the exception inside the DeviceServer implementation.
+
+	Check that all attributes are memorized!
+	Analog Output:	LastValues must be memorized also!!!!
+
+
+
+EXCEPTIONS:
+	Segmentation fault while loading unexistent file!!!
+
+	Reboted the machine after a -13 error, open driver failed
+
+
+GENERAL PROCEDURES:
+
+Calcullating the Scan Interval and Samp Interval
+----------------------------------------------------------------------------------------
+Scan Interval = It's the Sample Rate seen from the user point of view (also called CHUI in Analog Output operations)
+Samp Interval = Should be the maximum allowed by the DAQ, multiplied by the number of channels give us the maximum Scan Interval
+
+	Ranges for ScanInterval:
+	DAQ_2005 AI, DAQ_2205 AI: 80-1677215
+	DAQ_2502 AI: 100-1677215
+	
+	Ranges for SampInterval:
+	DAQ_2005 AI, DAQ_2205 AI: 80-65536
+	DAQ_2502 AI: 100-1677215
+	
+	Ranges for CHUI (ScanInterval for Analog Outputs):
+	DAQ_2*: 40-1677215
+	
+	In PCI_DASK Cards it depends of the card
+
+Calcullating Buffer Sizes (Total/Channel/DoubleBuffer/...)
+----------------------------------------------------------------------------------------
+....
+
+
+About PCI_6208V
+----------------------------------------------------------------------------------------
+Complement must be implemented between RawData array and WriteChannel function.
+10V=32767; -10V=32768;  0V=0=65536;
+
+There was some error writing the first of 8 channels, the channel 0 must be rewritten after the eight channels has been already written.
+
+How To Mix DC Sets and Waveform Generation
+----------------------------------------------------------------------------------------
+For the moment if ChannelBufferSize=1 then SingleOutput, if not ContinuousOutput
+
+But it can be managed in a more versatile way through the BufferedChannelsList:
+	If ChannelBufferSize=1 the operation performed is always SingleOutput
+	If it doesn't then ContinuousOutput will be performed with all the channels present in the BufferedChannelsList, the rest will be SingleOutputs
+
+	If you write a ChannelArray with more than one sample (and ChannelBufferSize>1) this channel immediately enters the BufferedChannelsList
+	If it's written with only one sample, then it is set as a DC Channel (and gets retired from the list)
+	It should be the same if the LastChannelValue attribute is written? I suppose
+
+
+----------------------------------------------------------------------------------------
+
+----------------------------------------------------------------------------------------

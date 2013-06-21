@@ -1,0 +1,27 @@
+
+This script is useful to easily generate ramp files for analog output
+which can then be imported.
+
+example usage:
+
+#----------------------------------------------------------------------------
+import mkramp
+from math import *
+
+
+destfile = 'caca.ramp'
+nsamples = 1024
+
+channels = [
+	lambda x: 4*sin(2*pi*x/nsamples),
+	lambda x: 4*cos(2*pi*x/nsamples),
+	lambda x: 4*sin(2*pi*x/nsamples) - 2*cos(2*pi*x/nsamples),
+	lambda x: 5*x/nsamples,
+]
+
+mkramp.build_file(destfile, channels, nsamples)
+#----------------------------------------------------------------------------
+
+The generated file - "caca.ramp" - can be imported through import command
+or the ALLRF GUI into AdlinkIODS DS.
+

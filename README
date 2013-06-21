@@ -1,0 +1,23 @@
+
+INFO FOR USERS:
+    - See ./doc/ds/index.html
+    - PAPAs @ ./doc/ds/PAPA.txt
+
+INFO FOR DEVELOPERS:
+	- See ./doc/ds/index.html
+	- Code is doxygen documented. You can build it with "make doc".
+		You can then find the doxygen documentation (including BUGS, FIXMEs and
+		TODOes) in ./doc/doxygen/html/index.html
+	- There used to be various help files here too. They are now in ./doc/devel
+		now.
+	- ./doc/devel/build.txt For instructions on how to compile this package.
+	- ./doc/devel/NOTES_ON_SIGNALS.TXT Some notes I took before doing the
+		signal callbacks implementation of Analog Input ( Old versions of the
+		device used to always do polling to check if there is new
+		data available).
+	- ./doc/devel/AdlinkIODS_Notex.txt Old notes, but some points may still
+		be valid...
+	- ./doc/devel/AdlinkIODS.latex One day this will be the only information
+		source besides doxygen. So it's some more notes. This can be compiled
+		into PDF using latex. It's the best entry point into this DS after
+		having read QuickStart.txt.

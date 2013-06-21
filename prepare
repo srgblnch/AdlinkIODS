@@ -1,0 +1,22 @@
+#!/bin/bash
+
+#TEMP=/tmp/alba03
+#TEMP=/tmp/bootservertmp
+
+TEMP=`cd ../..; pwd`
+
+# Where to look for tango libs and includes
+export TANGO_HOME=/sicilia
+
+# Where the DIO abstract includes and compiled aux library is
+#export DIOSUPER_HOME=${TEMP}/rsune/DigitalIO/abstract
+export DIOSUPER_HOME=${TEMP}/InputOutput/DigitalIO/abstract
+
+# Where the AnalogDAQ abstract is
+#export SUPER_HOME=${TEMP}/rsune/AnalogDAQ
+export SUPER_HOME=${TEMP}/AbstractClasses/AnalogDAQ/
+
+# Where PCIDASK and D2KDASK libraries and includes can be found
+#export DASK_HOME=${TEMP}/rsune/drivers
+export DASK_HOME=~/projects/olluenv/adlink/
+

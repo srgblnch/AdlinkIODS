@@ -1,0 +1,116 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 3.2//EN">
+<HTML>
+<head>
+<title> AdlinkIODS Tango Device Server </title>
+<link rel="stylesheet" type="text/css" href="./res/normal.css" />
+</head>
+<body>
+
+<div>
+<a href="http://www.esrf.fr/" target="new"><img src="./res/esrf.gif" border="0" height="60"/></a>
+<a href="http://www.elettra.trieste.it/" target="new"><img src="./res/elettra_logo.gif" border="0" height="60"/></a>
+<a href="http://www.synchrotron-soleil.fr/" target="new"><img src="./res/soleil_logo.gif" border="0" height="60"/></a>
+<a href="http://www.cells.es/" target="new"><img src="./res/alba.jpg" border="0" height="60"/></a>
+<a href="http://www.desy.de/html/home/index_eng.htm" target="new"><img src="./res/desy.gif" border="0" height="60"/></a>
+<a href="http://www.tango-controls.org/" target="new"><img src="./res/tango.jpg" border="0" height="60"/></a>
+<br/>
+<hr width="100%"/>
+</div>
+
+
+
+<h1>"AdlinkIODS" Tango Device Server</h1>
+<p> <ul>
+  <li><b>for Adlink Analog Input Output, User's Guide</b></li>
+  <li><b>Revision</b>: "2.0"</li>
+  <li><b>Author</b>: rsune &amp; srubio </li>
+  <li><b>Implemented in</b>: C++</li>
+  <li><b>Last update</b>: 2009/09/10</li>
+</ul> </p>
+
+
+
+
+
+
+
+
+<h2>Introduction</h2>
+
+
+<p>
+This device server implements support for several Adlink boards
+with analog input/output capabilities. Supported devices are:
+ <ul>
+   <li><b>Adlink D2K devices</b>: DAQ_2205, DAQ_2213, DAQ_2502, DAQ_2005, DAQ_2010</li>
+   <li><b>Adlink PSDASK devices</b>: PCI_6202, PCI_6208V, PCI_6208A, PCI_9116</li>
+ </ul>
+</p>
+
+<p>
+Some of these boards have several different capabilities. That's
+why the server exports several device classes:
+ <ul>
+   <li><a href="./AdlinkAIO/user_guide.html">AdlinkAI</a></li>
+   <li><a href="./AdlinkAIO/user_guide.html">AdlinkAO</a></li>
+   <li><a href="./AdlinkDIO/user_guide.html">AdlinkDIO</a></li>
+   <li><a href="./AdlinkIOCounter/user_guide.html">AdlinkIOCounter</a></li>
+ </ul>
+</p>
+
+<p>
+You can have several devices in the same server with equal BoardId and BoardType but
+different class, for example if it has independent analog input and output channels and
+a some digital ones too.
+</p>
+
+<p>
+Note that the AdlinkAI and AdlinkAO classes implement an almost equal interface.
+</p>
+
+<p>
+All the devices in one server must refer to the same physical board.
+</p>
+
+
+
+
+
+
+<!--- html Footer --->
+
+
+<p>
+<table width="100%">
+    <tr>
+		<!--- Hosted by Sourceforge --->
+        <td align="center">
+			<b>TANGO</b> is an open source project hosted by :<br/>
+			<a href="http://sourceforge.net" Target="new">
+					<img title="Sourceforge logo"
+						alt="Sourceforge logo small"
+						src="http://www.esrf.fr/computing/cs/tango/sourceforge.gif"
+						border=0 /> </a>
+		</td>
+		<!--- 2 Sourceforge Repositories --->
+		<td align="center">
+			Core and Tools :
+			<a href="http://tango-cs.cvs.sourceforge.net/tango-cs/" Target="new">
+			CVS repository</a> on
+			<a href="https://sourceforge.net/projects/tango-cs" Target=new>
+			tango-cs project</a>
+
+			<br/>
+
+			Device Servers :
+			<a href="http://tango-ds.cvs.sourceforge.net/tango-ds/" Target="new">
+					CVS repository</a> on
+			<a href="https://sourceforge.net/projects/tango-ds" Target=new>
+					tango-ds project</a>
+		</td>
+    </tr>
+</table>
+</p>
+
+</body>
+</html>

@@ -1,0 +1,61 @@
+Hola,
+
+Mail complicat, aviam si s'enten:
+
+ - Questio: Que paaacha amb el BCM que de tant en tant fa aquells pics raros?
+ - Primer intent: Esbrinar que llegeix la targeta ADC en els moments en que
+   peta i mirar-ho tranquilament.
+ - Com: Amb un script que es va guardant totes les adquisicions de l'ADC per
+   a, quan veiem un pic, parar-lo i observar-la tranquilament.
+ - Instruccions INSTALACIO: Fet, esta a traianus, a ~/UBALDO/pics-script
+ - Instruccions Capturar dades:
+       Amb la GUI oberta per a veure si hi ha un pic o no, executar:
+
+          cd ~/UBALDO/pics-script
+          ./bcmhear 1
+
+      El 1 aqui era el numero del canal de l'ADC a capturar, no se quin dels
+      BCM falla, tu que ho saps tries si vols mirar el 1 el 2 o el 3.
+      Si tot va be, cada segon apareixera un missatget amb la hora actual:
+
+ operator@traianus:~/UBALDO/pics-script>./bcmhear 1
+ 10:27:45.035651
+ 10:27:45.786873
+ 10:27:46.786902
+ 10:27:47.786960
+ 10:27:48.786988
+ 10:27:49.787030
+
+      I si tot va be, el missatget sortira sempre cada segon exacte (excepte
+      el primer). Si se salta algun segon, potser hem trobat algo semblant a
+      un problema!
+
+      Quan vegis un pic, pots parar la adquisicio apretant a l'hora 
+      "CONTROL" i "C".
+
+ - Instruccions: Vale, se que per exemple als volts de les 10:27:47 hi ha 
+   hagut un pic i el tinc capturat. Com veig que hi havia en aquell moment a
+   l'ADC?
+
+       cd ~/UBALDO/pics-script
+       ./plot 10:27:46.786902
+
+   I apareixera una fantastica cutre-grafica amb la adquisicio, on podrem 
+   veure si es normal (i per tant algo esta malament al device server dels
+   BCM) o no (esta malament el ADC, o el propi BCM o el linac no tira
+   electrons tots els cops que hauria...).
+
+   La data que li passes a 'plot' ha de ser exacta d'una adquisicio, les que
+   sortien quan adquiriem(bcmhear). Per recordarles pots fer:
+
+             ls ~/UBALDO/pics-script/results
+
+   Quan comenci una nova adquisicio (bcmhear) els valors anteriors s'esborren
+   tots, si se'n vol conservar algun cal copiarsel lluny de la carpeta 
+   results.
+
+   Veien aquests plots he recordat que el plot de l'atkpanel no es de fiar,
+   per cert, ja que sempre representa un valor final "0" que no existeix. Les
+   grafiques de "./plot" no tenen aquest problema.
+
+Bon Nadal

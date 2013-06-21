@@ -1,0 +1,12 @@
+
+Before building this device server, you will need to load some environment variables.
+You can do it this way:
+
+rsune@pc100$ . prepare
+
+Edit "prepare" to set the variables according to you system. There may be more
+variables, look at the Makefiles and search for them.
+In newest Makefiles(now only aio/) you should search "?=" and it will give you a good info.
+In older Makefiles search for DEF_, as DEF_TANGO_HOME for example will contain
+the default value for TANGO_HOME.
+

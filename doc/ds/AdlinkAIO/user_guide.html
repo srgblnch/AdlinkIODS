@@ -1,0 +1,955 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 3.2//EN">
+<HTML>
+<head>
+<title> Tango "AdlinkAI" &amp; "AdlinkAO" Classes User's Guide </title>
+<link rel="stylesheet" type="text/css" href="../res/normal.css" />
+</head>
+<body>
+
+<div>
+<a href="http://www.esrf.fr/" target="new"><img src="../res/esrf.gif" border="0" height="60"/></a>
+<a href="http://www.elettra.trieste.it/" target="new"><img src="../res/elettra_logo.gif" border="0" height="60"/></a>
+<a href="http://www.synchrotron-soleil.fr/" target="new"><img src="../res/soleil_logo.gif" border="0" height="60"/></a>
+<a href="http://www.cells.es/" target="new"><img src="../res/alba.jpg" border="0" height="60"/></a>
+<a href="http://www.desy.de/html/home/index_eng.htm" target="new"><img src="../res/desy.gif" border="0" height="60"/></a>
+<a href="http://www.tango-controls.org/" target="new"><img src="../res/tango.jpg" border="0" height="60"/></a>
+<br/>
+<hr width="100%"/>
+</div>
+
+
+
+<h1>"AdlinkAI" &amp; "AdlinkAO" Tango Classes</h1>
+<p> <ul>
+  <li><b>User's Guide for Adlink Analog Input Output</b></li>
+  <li><b>Revision</b>: "2.0"</li>
+  <li><b>Author</b>: rsune &amp; srubio </li>
+  <li><b>Implemented in</b>: C++</li>
+  <li><b>Last update</b>: 2009/09/10</li>
+  <li><b>NOTE</b>: Pogo does not recognize the project anymore, 
+  so this file has to be updated manually.</li>
+</ul> </p>
+
+
+
+
+
+
+
+
+<h2>Index</h2>
+<p>
+<ul>
+<li><a href="#intro">Introduction</a>
+  <ul>
+    <li><a href="#intro_quickstart">Quick Start</a></li>
+    <li><a href="#intro_diffsaiao">Differences AdlinkAI / AdlinkAO</a>
+      <ul>
+        <li><a href="#intro_stats">Statistical Operations</a></li>
+      </ul>
+    </li>
+    <li><a href="#intro_states">States</a></li>
+  </ul> </li>
+<li><a href="#inheritance">Class Inheritance</a></li>
+<li><a href="#properties">Properties</a>
+  <ul>
+    <li><a href="#device_properties">Device properties</a></li>
+    <li><a href="#properties_default_values">Default values</a></li>
+    <li><a href="#class_properties">Class properties</a></li>
+  </ul> </li>
+<li><a href="#attributes">Attributes</a>
+  <ul>
+    <li><a href="#attributes_scalar">Scalar</a></li>
+    <li><a href="#attributes_spectrum">Spectrum</a></li>
+    <li><a href="#attributes_image">Image</a></li>
+  </ul> </li>
+<li><a href="#commands">Commands</a></li>
+<li><a href="#diff_v1">Differences with AdlinkIODS v1</a></li>
+</ul>
+</p>
+
+
+
+
+
+
+
+
+<a name="intro" />
+<h2>Introduction</h2>
+
+<p>
+This manual describes the Tango interfaces to Analog Input and Analog Output ports of
+Adlink boards.
+</p>
+
+<p>
+These are represented by two classes: AdlinkAI and AdlinkAO. For historical reasons
+they are very similar (they used to be just one, and actually internally still are) 
+so they are explained in a single document. They both implement the AnalogDAQ interface.
+</p>
+
+
+
+<a name="intro_quickstart" />
+<h3>Quick Start</h3>
+
+<p>
+After creating the device server, the properties you must set are:
+<ul>
+	<li> BoardId : usually 0 </li>
+	<li> BoardType: DAQ_2005, DAQ_2010, DAQ_2205, PCI_6208V, PCI_9116...</li>
+	<li> NumOfChannels: How many channels do you want to use from the board for
+		Input/Output</li>
+</ul>
+The rest are optional. really.
+</p>
+
+<p>
+Now run the device. If everything goes well, you are in STANDBY state. This
+is the configuration state. The configuration attributes can only be modified now.
+The most basic ones are SampleRate, ChannelSamplesPerTrigger, NumOfTriggers and TriggerInfinite.
+</p>
+
+<p>
+Noteworty also are the CXX_ChannelValues attributes. There are as many of them as
+indicated by the NumOfChannels property. In analog input mode it is not available yet,
+as this contains the data buffer acquired, and we are not acquiring.
+In analog output you can write it safely, but the values you write there will not be
+sent to the channel output until you move to the next state.
+</p>
+
+<p>
+When done with this, just "start()" the device (It should go to the RUNNING
+state). To reconfigure, you will need to "stop()" it again, to go back to STANDBY.
+</p>
+
+<a name="intro_diffsaiao" />
+<h3>Differences AdlinkAI / AdlinkAO</h3>
+<p>
+Input/Output Direction of the Channels to be managed,defined in this context:
+	<ul>
+	  <li>1.	Each Tango Device will manage all the Channels of a same Type/Direction of a DAQ Card.</li>
+	  <li>2.	The same card cannot be accessed by two Analog Input devices at the same time; and two different devices (1 AI + 1 AO) will be needed to manage a Multi-Purpose Card with Channels of both types.</li>
+	</ul>
+	-> The Read/Write permissions of the DoubleDATA, RawDATA, *ChannelValues and *LastValue Attributes will be determined by the value of this Property<br/>
+</p>
+
+
+<a name="intro_stats" />
+<h4>Statistical operations</h4>
+<p>
+AI devices can perform statistical operation on the input: Mean, Standard Deviation and Quadratic Mean.
+To configure it you should set the property <a href="#properties_StatsSettings">StatsSettings</a>.
+</p>
+
+<a name="intro_states" />
+<h3>Device States Description</h3>
+<p>
+<ul>
+  <li>
+  <b>UNKNOWN</b>: There has been a problem during initialization of the device. Check "Status" for more information. Nothing is available in this state, do "Init" to try again.
+  </li>
+  <li>
+  <b>FAULT</b>: There has been a severe problem during operation. Check "Status" for more information. Nothing is available in this state, do "Init" to re initialize everything.
+  </li>
+  <li>
+  <b>STANDBY</b>: Initialization process succeeded, but we are not doing any conversion now. In AdlinkAI the value attributes (CXX_ChannelValues, CXX_LastValues...) are INVALID in this state. However in AdlinkAO you can set them, just as the rest of the attributes. It's configuration phase, nothing will be applied to the device until you hit "Start".
+  </li>
+  <li>
+  <b>RUNNING</b>: You hit "Start" and now the device is performing conversions! The value attributes may have a value now(not necessary in AdlinkAI, we may be waiting for a trigger). Now the configuration parameters are not writable anymore., except for the values to write in case of AdlinkAO.
+  </li>  
+  <li>
+  <b>ON</b>: This state in AdlinkAI means that the acquisition is finished. Sure there must be some values in CXX_ChannelValues now!
+  </li>
+</ul>
+</p>
+
+
+
+
+
+
+
+
+<a name="inheritance">
+<h2>Class Inheritance</h2>
+<p>
+	<ul>
+		<li> <a href="http://www.esrf.fr/computing/cs/tango/tango_doc/kernel_doc/cpp_doc/classTango_1_1Device__4Impl.html"> Tango::Device_4Impl</a></li>
+		<ul>
+			<li> <a href="http://www.esrf.fr/computing/cs/tango/tango_doc/ds_doc/"> AnalogDAQ </a></li>
+			<ul>
+				<li> AdlinkAIO</li>
+			</ul>
+		</ul>
+	</ul>
+</p>
+
+
+
+
+
+
+
+<a name="properties">
+<h2>Properties</h2>
+
+
+<a name="device_properties">
+<h3>Device Properties</h3>
+<p align="center">
+<table  width="100%">
+<thead>
+<tr><th colspan="3">Device Properties</th></tr>
+<tr><th>Property name</th><th>Property type</th><th>Description</th></tr>
+</thead>
+<tbody>
+<tr>
+  <td><b><a href=#properties_default_values>BoardId </a></b></td>
+  <td>Tango::DEV_STRING</td>
+  <td>It must be an unique identifier for each card on the PC/Rack where it is installed. It is the Board Number in the Rack. So if there are two cards of the same BoardType in the rack, the first will have BoardId=0 and the other BoardId=1.</td>
+</tr>
+<tr>
+  <td><b><a href=#properties_default_values>BoardType </a></b></td>
+  <td>Tango::DEV_STRING</td>
+  <td>Product descriptor that allow us to identify the card type. Supported values are: DAQ_2205, DAQ_2213, DAQ_2502, DAQ_2005, DAQ_2010, PCI_6202, PCI_6208V, PCI_6208A, PCI_9116.</td>
+</tr>
+<tr>
+  <td><b><a href=#properties_default_values>NumOfChannels </a></b></td>
+  <td>Tango::DEV_USHORT</td>
+  <td>Total number of channels available in the DAQ card. This Property refers only to the Physical Channels of the same type of the Abstract Class (e.g. in an Analog Input Device it will refer only to the Analog Input Channels).
+  -> It determines the maximum size of the Attribute BufferedChannels List and fixes the Attribute default value.</td>
+</tr>
+<tr>
+  <td><b><a href=#properties_default_values>ReferenceGround </a></b></td>
+  <td>Tango::DEV_STRING</td>
+  <td>A/D input channels reference Ground Selection (only available for
+	DAQ-2204/2205/2206/2208/2213/2214):
+	<ul>
+	  <li> DAQ-2010, DAQ-2005, DAQ-2006, DAQ-2501, DAQ-2502: 0</li>
+	  <li> DAQ-2204, DAQ-2205, DAQ-2206, DAQ-2208, DAQ-2213, DAQ-2214:</li>
+	  <ul>
+
+	  <li>AI_RSE : Referenced single ended mode ( 64chs common to ground
+	  system on board) (default value)</li>
+	  <li>AI_DIFF : Differential mode</li>
+	  <li>AI_NRSE : Non-referenced single ended mode ( 64chs common to
+	  AISENSE pin )</li>
+	</ul>
+  </td>
+</tr>
+<tr>
+  <td><b><a href=#properties_default_values>AutoStart </a></b></td>
+  <td>Tango::DEV_BOOLEAN</td>
+  <td>If set to true, device will be automatically started on init.</td>
+</tr>
+<tr>
+  <td><b><a href=#properties_default_values>UseCallbackSignals </a></b></td>
+  <td>Tango::DEV_BOOLEAN</td>
+  <td>
+	In this conditions are given:
+	<ul>
+	  <li>It is set to true.</li>
+	  <li>We are in a mode that can make use of callback signals.</li>
+	  <li>The physical board supports signals for this mode.</li>
+	</ul>
+	Then callback signals will be used, instead of a polling thread.
+	Default value is true. Analog Input only.
+  </td>
+</tr>
+
+<tr><td><b><a href=#properties_default_values>UseSharedBuffer </a></b></td>
+<td>Tango::DEV_BOOLEAN</td>
+<td>If it is true, it will always copy the contents of the acquisitions
+from driver memory to tango. If it is set to false, in some cases
+(It's not always possible!) the data will be copied to tango space
+ONLY when reading of an attribute is requested.
+Default value is true. Analog Input only.</td></tr>
+
+<tr><td><b><a href=#properties_default_values>EnableChannelValueEvents </a></b></td>
+<td>Tango::DEV_BOOLEAN</td>
+<td>In Analog Input, if the value of an attribute changes the
+attribute will automatically push a change event.
+This applies only to CXX_ChannelValues attributes.
+Defaults to false.</td></tr>
+
+<tr><td><b><a href=#properties_default_values>EnableLastValueEvents </a></b></td>
+<td>Tango::DEV_BOOLEAN</td>
+<td>In Analog Input, if the value of an attribute changes the
+attribute will automatically push a change event.
+This applies only to LastValues and CXX_LastValue attributes.
+Defaults to false.</td></tr>
+
+
+<tr><td><b><a href=#properties_default_values>StatsSettings</a></b></td>
+<td>Tango::DEV_STRING</td>
+<td>
+<a name="properties_StatsSettings" />
+Statistical operations to be performed. This means new
+attributes will be created. As an example, it will create
+all the available statistical attributes:
+<pre>
+  last_mean event
+  last_std_dev event
+  last_quadratic_mean event
+  buf_mean
+  buf_std_dev
+  buf_quadratic_mean
+</pre>
+<i><b>last_</b>mean</i> means you want a new scalar attribute CXX_MeanLast
+with the value of the last buffer mean.<br/>
+<i><b>buf_</b>mean</i> means you want a new spectrum attribute CXX_MeanValues
+with the means of the last NumOfTriggers buffers.<br/>
+<i><b>event</b></i> after another token means that the previous attribute 
+(ex CXX_MeanLast or CXX_MeanValues) will automatically push change events
+when new data is available.
+</td></tr>
+
+
+
+
+
+<tr>
+  <td><b><a href=#properties_default_values>IsInput </a></b></td>
+  <td>Tango::DEV_BOOLEAN</td>
+  <td>
+  <b>DEPRECATED AND IGNORED</b>
+  </td>
+</tr>
+<tr>
+  <td><b><a href=#properties_default_values>OnBoardBuffer </a></b></td>
+  <td>Tango::DEV_ULONG</td>
+  <td><b>DEPRECATED AND IGNORED:</b> On board buffer of the Physical Device.</td>
+</tr>
+<tr>
+  <td><b><a href=#properties_default_values>MaxSampleRate </a></b></td>
+  <td>Tango::DEV_ULONG</td>
+  <td><b>CURRENTLY IGNORED:</b> Maximum Sample Rate (per Channel) that is capable the DAQ Card.
+  -> The SampleRate.MaxValue Attribute Property will be fixed each time this Property is modified.</td>
+</tr>
+<tr>
+  <td><b><a href=#properties_default_values>MaxSourceRange </a></b></td>
+  <td>Tango::DEV_DOUBLE</td>
+  <td><b>CURRENTLY IGNORED:</b> Maximum Source Range allowed (Bipolar), it is understood as +/-MaxSourceRange.
+  -> The Attributes MaxSourceRef and MinSourceRef will adapt its MaxValue and MinValue Properties to the value stored in this Property.</td>  
+</tr>
+<tr>
+  <td><b><a href=#properties_default_values>DynamicRange </a></b></td>
+  <td>Tango::DEV_USHORT</td>
+  <td><b>CURRENTLY IGNORED:</b> Number of Bits of the DAQ Converter.
+  -> It allows to convert from RawDATA (binary obtained from the Analog to Digital converter) to DoubleDATA (float point values normalized in the SourceRange).</td>
+</tr>
+<tr>
+  <td><b><a href=#properties_default_values>Units </a></b></td>
+  <td>Tango::DEV_STRING</td>
+  <td><b>CURRENTLY IGNORED:</b> Units concerning to the data measured/generated.
+  -> This property will modify the units for all related Attributes.</td>
+</tr>
+
+
+
+
+
+</tbody>
+</table>
+
+</p>
+
+
+
+
+
+
+
+
+
+
+
+
+<a name="properties_default_values"><!---  ---></a>
+<h3> Device Properties Default Values</h3>
+<p>
+<table>
+  <thead>
+    <tr>
+        <th><b>Property Name</b></th>
+        <th><b>Default Values</b></th>
+    </tr>
+  </thead>
+  <tbody>
+    <tr>
+        <td>BoardId</td>
+        <td>No default value</td>
+    </tr>
+    <tr>
+        <td>BoardType</td>
+        <td>No default value</td>
+    </tr>
+    <tr>
+        <td>NumOfChannels</td>
+        <td>No default value</td>
+    </tr>
+    <tr>
+        <td>ReferenceGround</td>
+        <td>AI_RSE</td>
+    </tr>
+    <tr>
+        <td>AutoStart</td>
+        <td>0</td>
+    </tr>
+    <tr>
+        <td>UseCallbackSignals</td>
+        <td>1</td>
+    </tr>
+    <tr>
+        <td>UseSharedBuffer</td>
+        <td>1</td>
+    </tr>
+    <tr>
+        <td>EnableChannelValueEvents</td>
+        <td>0</td>
+    </tr>
+    <tr>
+        <td>EnableLastValueEvents</td>
+        <td>0</td>
+    </tr>
+    <tr>
+        <td>StatsSettings</td>
+        <td></td>
+    </tr>
+    <tr>
+        <td>IsInput</td>
+        <td>No default value</td>
+    </tr>
+    <tr>
+        <td>OnBoardBuffer</td>
+        <td>No default value</td>
+    </tr>
+    <tr>
+        <td>MaxSampleRate</td>
+        <td>No default value</td>
+    </tr>
+    <tr>
+        <td>MaxSourceRange</td>
+        <td>No default value</td>
+    </tr>
+    <tr>
+        <td>DynamicRange</td>
+        <td>No default value</td>
+    </tr>
+    <tr>
+        <td>Units</td>
+        <td>No default value</td>
+    </tr>
+  </tbody>
+</table>
+</p>
+
+
+
+
+
+
+
+
+
+
+
+
+<a name="class_properties" />
+<h3> Class properties </h3>
+<p>
+There are no Class properties.
+</p>
+
+ 
+
+
+
+
+
+
+
+
+
+
+
+
+
+<a name="attributes" />
+<h2>Attributes</h2>
+<p>
+<a name="attributes_scalar"/>
+<table width="100%">
+
+<thead>
+<tr>
+<th colspan="4">Scalar Attributes</th>
+<tr>
+<th>Attribute name</th>
+<th>Data Type</th>
+<th>R/W Type</th>
+<th>Expert</th>
+</thead>
+<tbody>
+
+<tr>
+<td><b>CXX_LastValue</b>: It is always the last value of CXX_ChannelValues.<br/>
+When written(<u>only writable in AdlinkAO</u>) it will fill the whole CXX_ChannelValues with
+the written scalar, thus replacing a wave with a flat value.</td>
+<td>DEV_DOUBLE</td><td>READ_WRITE</td><td>No</td>
+</tr>
+
+<tr><td><b>CXX_MeanLast, CXX_StdDevLast, CXX_QuadraticMeanLast</b>: (<u>AdlinkAI only</u>)</td>
+<td>DEV_DOUBLE</td><td>READ_WRITE</td><td>No</td></tr>
+
+
+<tr><td><b>SampleRate</b>: The sampling frequency used by the device. </td>
+<td>DEV_LONG</td><td>READ_WRITE</td><td>No</td></tr>
+
+<tr><td><b>ChannelSamplesPerTrigger</b>: Size of the buffer used for each channel by this tango device.</td>
+<td>DEV_LONG</td><td>READ_WRITE</td><td>No</td></tr>
+
+
+<tr><td><b>NumOfTriggers</b>: The number of times that the entire buffer will be processed. It can be acquired/generated only one time if the value is 1, only for 5 times..  <br/>Its behavior will change depending of the selected TriggerMode.</td>
+<td>DEV_LONG</td><td>READ_WRITE</td><td>No</td></tr>
+
+<tr><td><b>TriggerInfinite</b>: Perform the operation indefinitelly? <br/> <ul><li>0: No</li><li>1: Yes, since the first trigger arrives then act continuously</li><li>2: Yes, after a trigger get a buffer, then wait for the next trigger.</li></ul> </td>
+<td>DEV_LONG</td><td>READ_WRITE</td><td>No</td></tr>
+
+
+<tr><td><b>NumOfDisplayableTriggers</b>: (<u>AdlinkAI only</u>) The number of triggers that will be shown in CXX_ChannelValues. So, the maximum CXX_ChannelValues size is NumOfDisplayableTriggers*ChannelSamplesPerTrigger. A value of -1 means NumOfDisplayableTriggers=NumOfTriggers.</td>
+<td>DEV_LONG</td><td>READ_WRITE</td><td>No</td></tr>
+
+
+<tr><td><b>MaxRefSource</b>: Maximum reference source value (rel. to Units Prop.) </td>
+<td>DEV_DOUBLE</td><td>READ_WRITE</td><td>No</td></tr>
+
+
+<tr><td><b>MinRefSource</b>: Minimum reference source value (rel. to Units Prop.) <br/>The Bipolar Range, Internal Reference and Reference Source Value can be deprecated, so they are more specific than needed. I think that it\'s better to use two values and allow asymmetric reference settings by default.</td>
+<td>DEV_DOUBLE</td><td>READ_WRITE</td><td>No</td></tr>
+
+
+<tr><td><b>TriggerHighLimit</b>: See TriggerSources. It is only valid if TriggerSources is  ANA:avobe-high, ANA:inside-region, ANA:low-hysteresis or ANA:high-hysteresis</td>
+<td>DEV_DOUBLE</td><td>READ_WRITE</td><td>No</td></tr>
+
+
+<tr><td><b>TriggerLowLimit</b>: See TriggerSources. It is only valid if TriggerSources is ANA:below-low, ANA:inside-region, ANA:low-hysteresis or ANA:high-hysteresis</td>
+<td>DEV_DOUBLE</td><td>READ_WRITE</td><td>No</td></tr>
+
+
+<tr><td><b>TriggerSources</b>: An identifier to the available trigger signals used by the device, if empty defaults to internal or software triggering. <br/>Valid values are:<ul><li> <b>SOFT</b> Software trigger, start at the Start command itself.</li><li> <b>ExtD:+</b> External digital trigger, positive polarity.</li><li> <b>ExtD:-</b> for inverse polarity.</li><li> <b>SSI</b></li><li> <b>ANA:*option*</b> Configurable external analog trigger:<ul><li><b>ANA:below-low</b> for BelowLowLevel mode </li><li><b>ANA:avobe-high</b> for AvobeHighLevel mode</li><li><b>ANA:inside-region</b> </li><li><b>ANA:low-hysteresis</b> for LowHysteresis</li><li><b>ANA:high-hysteresis</b> for HighHysteresis</il></ul>The limits for the analog modes are set with the attributes TriggerLowLimit and TriggerHighLimit.</il></ul></td>
+<td>DEV_STRING</td><td>READ_WRITE</td><td>No</td></tr>
+
+
+<tr><td><b>TriggerMode</b>: <ul><li>0: POST</li><li>1: DELAY</li><li>2: PRE (AI only)</li><li>3: MIDL (AI only)</li></ul></td>
+<td>DEV_USHORT</td><td>READ_WRITE</td><td>No</td></tr>
+
+<tr><td><b>Delay</b>: Delay value in "delay trigger mode". </td>
+<td>DEV_LONG</td><td>READ_WRITE</td><td>No</td></tr>
+
+<tr><td><b>BufferPeriod</b>: Just an Interface between BufferSize and its equivalent in time units (depending of SampleRate). BufferSize and BufferPeriod will be the same internal variable that could be readed/modified using different unit  (Samples or milliseconds)  from two different attributes. It will not get it\'s memorized value automatically when the device starts, as it would conflict with SampleRate. Use SampleRate instead.</td>
+<td>DEV_DOUBLE</td><td>READ_WRITE</td><td>No</td></tr>
+
+
+<tr><td><b>FileName</b></td>
+<td>DEV_STRING</td><td>READ_WRITE</td><td>No</td></tr>
+
+
+
+
+</tbody>
+</table>
+</p>
+
+
+<p>
+<a name="attributes_spectrum"/>
+<table width="100%">
+<thead>
+<tr>
+<th colspan="4">Spectrum Attributes</th>
+<tr>
+<th>Attribute name</th>
+<th>Data Type</th>
+<th>X Data Length</th>
+<th>Expert</th>
+</tr>
+</thead>
+
+<tbody>
+<tr><td><b>BufferedChannelsList</b>: Array or Spectrum with the Identifiers of all channels actually used by this device that are sharing the internal Hardware Buffer (it won\'t be equal to the number of channels available). If it is not written it\'s understood that all the available channels are used.<br/> The Size/Length of this Array/Vector provides us the total number of channels used (and the *Values/*DATA Attributes Dimensions). It would be something like: ['<i>ai2</i>','<i>ai3</i>','<i>ai5</i>'] , each of strings identifying the channels used in the same order.</td>
+<td>DEV_STRING</td><td>256</td><td>No</td></tr>
+
+<tr><td><b>CXX_ChannelValues</b></td>
+<td>DEV_DOUBLE</td><td>LONG_MAX</td><td>No</td></tr>
+
+<tr><td><b>CXX_MeanValues, CXX_StdDevValues, CXX_QuadraticMeanValues</b> (<u>AdlinkAI only</u>)</td>
+<td>DEV_DOUBLE</td><td>LONG_MAX</td><td>No</td></tr>
+
+
+<tr><td><b>LastValues</b>: Shows the last value of all channels.</td>
+<td>DEV_DOUBLE</td><td>256</td><td>No</td></tr>
+
+</tbody>
+</table>
+</p>
+
+
+
+
+
+<p>
+<a name="attributes_image"/>
+<table width="100%">
+<thead>
+<tr>
+<th colspan="5">Image Attributes</td>
+<tr>
+<th>Attribute name</th>
+<th>Data Type</th>
+<th>X Data Length</th>
+<th>Y Data Length</th>
+<th>Expert</th>
+</thead>
+<tr><td><b>RawDATA</b>: Raw Binary values acquired directly from the DAQ conversion. Read/Write permissions will depend of the Analog Input/Output Property implementation.  <br/>The Dimensions of this attribute will be determined by ChannelSamplesPerTrigger and the BufferedChannelsList Size, so it could be resized <i>on the fly</i>.</td>
+<td>DEV_LONG</td><td>LONG_MAX</td><td>256</td><td>No</td></tr>
+
+<tr><td><b>DoubleDATA</b>: Just an interface to convert each value of the RawDATA image to its equivalent normalized inside the Reference Source Range specified (MaxSourceRef and MinSourceRef Attributes).</td>
+<td>DEV_DOUBLE</td><td>LONG_MAX</td><td>256</td><td>No</td></tr>
+
+</table>
+</p>
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+<a name="commands" />
+<h2>Commands</h2>
+<p>
+<table width="100%">
+<thead>
+<tr>
+<th COLSPAN=3>Device Commands for Operator Level</th>
+</tr>
+<tr>
+<th>Command name</th>
+<th>Argument In</th>
+<th>Argument Out</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+    <td><a href="#cmd_Init">Init</a></td>
+    <td>DEV_VOID</td>
+    <td>DEV_VOID</td>
+</tr>
+<tr>
+    <td><a href="#cmd_State">State</a></td>
+    <td>DEV_VOID</td>
+    <td>DEV_STATE</td>
+</tr>
+<tr>
+    <td><a href="#cmd_Status">Status</a></td>
+    <td>DEV_VOID</td>
+    <td>CONST_DEV_STRING</td>
+</tr>
+<tr>
+    <td><a href="#cmd_Start">Start</a></td>
+    <td>DEV_VOID</td>
+    <td>DEV_VOID</td>
+</tr>
+<tr>
+    <td><a href="#cmd_Stop">Stop</a></td>
+    <td>DEV_VOID</td>
+    <td>DEV_VOID</td>
+</tr>
+<tr>
+    <td><a href="#cmd_CalibrationAuto">CalibrationAuto</a></td>
+    <td>DEV_VOID</td>
+    <td>DEV_VOID</td>
+</tr>
+<tr>
+    <td><a href="#cmd_CalibrationSave">CalibrationSave</a></td>
+    <td>DEV_ULONG</td>
+    <td>DEV_VOID</td>
+</tr>
+<tr>
+    <td><a href="#cmd_CalibrationLoad">CalibrationLoad</a></td>
+    <td>DEV_ULONG</td>
+    <td>DEV_VOID</td>
+</tr>
+<tr>
+    <td><a href="#cmd_ImportFile">ImportFile</a></td>
+    <td>DEV_VOID</td>
+    <td>DEV_BOOLEAN</td>
+</tr>
+<tr>
+    <td><a href="#cmd_ExportFile">ExportFile</a></td>
+    <td>DEV_VOID</td>
+    <td>DEV_BOOLEAN</td>
+</tr>
+</tbody>
+</table>
+</p>
+
+
+<a name="cmd_Init" />
+<h3>1 - Init</h3>
+<p>
+<ul>
+<li><b>Description: </b> This commands re-initialise a device keeping the same network connection.<br/>
+After an Init command executed on a device, it is not necessary for client to re-connect to the device.<br/>
+This command first calls the device <i> delete_device() </i>method and then execute its <i> init_device()</i> method.<br/>
+For C++ device server, all the memory allocated in the <i> nit_device() </i> method must be freed in the <i> delete_device() </i> method.<br/>
+The language device desctructor automatically calls the <i> delete_device() </i> method.</li>
+<li><b>Argin: DEV_VOID</b>
+ : none.</li>
+<li><b>Argout: DEV_VOID</b>
+ : none.</li>
+<li><b>Command allowed for: </b><ul>
+</ul>
+</li>
+</ul>
+</p>
+
+
+
+<a name="cmd_State" />
+<p>
+<h3>2 - State</h3>
+<ul>
+<li><b>Description: </b> This command gets the device state (stored in its <i>device_state</i> data member) and returns it to the caller.</li>
+<li><b>Argin: DEV_VOID</b>
+ : none.</li>
+<li><b>Argout: DEV_STATE</b>
+ : State Code</li>
+<li><b>Command allowed for: </b><ul>
+</ul>
+</ul>
+</p>
+
+
+
+
+<a name="cmd_Status" />
+<p>
+<h3>3 - Status</h3>
+<ul>
+<li><b>Description: </b> This command gets the device status (stored in its <i>device_status</i> data member) and returns it to the caller.</li>
+<li><b>Argin: DEV_VOID</b>
+ : none.</li>
+<li><b>Argout: CONST_DEV_STRING</b>
+ : Status description</li>
+<li><b>Command allowed for: </b><ul>
+</ul>
+</ul>
+</p>
+
+
+
+
+
+<a name="cmd_Start" />
+<h3>4 - Start</h3>
+<p>
+<ul>
+<li><b>Description: </b> This Command will start the acquisition and will change the State to RUNNING.<br/>
+It will register the hardware device if the previous state was STANDBY <br/>
+The change from RUNNING State to ON is performed inside the always_executed_hook method. <br/>
+If the device server is in state ON the acquisition is restarted w/out reconfiguring the device.
+<li><b>Argin: DEV_VOID</b>
+ : </li>
+<li><b>Argout: DEV_VOID</b>
+ : </li>
+<li><b>Command allowed for: </b><ul>
+</ul>
+</ul>
+</p>
+
+
+
+
+
+
+<a name="cmd_Stop" />
+<h3>5 - Stop</h3>
+<p>
+<ul>
+<li><b>Description: </b> It Stops all the acquisition process, unregisters the Hardware device and sets the State to STANDBY. <br/>
+It's the only way to unblock the device from FAULT State to STANDBY.</li>
+<li><b>Argin: DEV_VOID</b>
+ : </li>
+<li><b>Argout: DEV_VOID</b>
+ : </li>
+<li><b>Command allowed for: </b><ul>
+</ul>
+</ul>
+</p>
+
+
+
+<a name="cmd_CalibrationAuto" />
+<h3>6 - CalibrationAuto</h3>
+<p>
+<ul>
+<li><b>Description: </b> Runs the auto calibration function of the board(if available).</li>
+<li><b>ACHTUNG: </b> It needs exclusive access to the board, so it will kill any other device running in this device server.</li>
+<li><b>Argin: DEV_VOID</b>
+ : </li>
+<li><b>Argout: DEV_VOID</b>
+ : </li>
+<li><b>Command allowed for: </b><ul>
+</ul>
+</ul>
+</p>
+
+
+
+<a name="cmd_CalibrationSave" />
+<h3>7 - CalibrationSave</h3>
+<p>
+<ul>
+<li><b>Description: </b>
+    Saves the current calibration settings into the EEPROM. See the board
+    documentation. You can use CalibrationAuto previously to set these settings
+    and CalibrationLoad to restore from the EEPROM.
+</li>
+<li><b>Argin: DEV_ULONG</b>
+ : EEPROM storage bank number, 0 to 3. </li>
+<li><b>Argout: DEV_VOID</b>
+ : </li>
+<li><b>Command allowed for: </b><ul>
+</ul>
+</ul>
+</p>
+
+
+<a name="cmd_CalibrationLoad" />
+<h3>8 - CalibrationLoad</h3>
+<p>
+<ul>
+<li><b>Description: </b>
+    Restore the calibration settings saved with CalibrationSave.
+</li>
+<li><b>Argin: DEV_ULONG</b>
+ : EEPROM storage bank number, 0 to 3. </li>
+<li><b>Argout: DEV_VOID</b>
+ : </li>
+<li><b>Command allowed for: </b><ul>
+</ul>
+</ul>
+</p>
+
+
+
+
+<a name="cmd_ImportFile" />
+<h3>9 - ImportFile</h3>
+<p>
+<ul>
+<li><b>Description: </b> It imports inside the rawData buffer the contents of the file designed by FileName Attribute</li>
+<li><b>Argin: DEV_VOID</b>
+ : File Name</li>
+<li><b>Argout: DEV_BOOLEAN</b>
+ : Ok</li>
+<li><b>Command allowed for: </b><ul>
+</ul>
+</ul>
+</p>
+
+
+
+<a name="cmd_ExportFile" />
+<h3>10 - ExportFile</h3>
+<p>
+<ul>
+<li><b>Description: </b> It exports the full rawData buffer buffer contents to a file designed by FileName Attribute</li>
+<li><b>Argin: DEV_VOID</b>
+ : File Name</li>
+<li><b>Argout: DEV_BOOLEAN</b>
+ : Ok</li>
+<li><b>Command allowed for: </b><ul>
+</ul>
+</ul>
+</p>
+
+
+
+
+
+
+
+
+
+
+
+<a name="diff_v1" />
+<h2>Differences with AdlinkIODS v1</h2>
+(old -> new)
+<ul>
+  <li> AdlinkAIO + isInput -> AdlinkAI + AdlinkAO </li>
+  <li> ChannelbufferSize -> ChannelSamplesPerTrigger </li>
+  <li> NumOfShots>0 -> NumOfTriggers + TriggerInfinite=0. </li>
+  <li> NumOfShots=-1 -> TriggerInfinite=1 </li>
+  <li> TriggerMode=4 -> TriggerMode=0 + TriggerInfinite=1. It was an AO wierdness, AI already was TriggerMode=0 + NumOfShots=-1. </li>
+  <li> TriggerMode=5 -> TriggerMode=1 + TriggerInfinite=1. It was an AO wierdness, AI already was TriggerMode=0 + NumOfShots=-1. </li>
+  <li> LastIsMean -> StatsSettings. Now CXX_LastValue will always be the last value, and new attributes are created for the statistical values depending on StatsSettings.</li>
+  <li> OnBoardBuffer is useless now. As a side efect it was capable of dividing CXX_ChannelValues so that it was getting bigger with each trigger. Now this is accomplished with NumOfDisplayableTriggers.</li>
+</ul>
+
+<!--- html Footer --->
+
+
+<p>
+<table width="100%">
+    <tr>
+		<!--- Hosted by Sourceforge --->
+        <td align="center">
+			<b>TANGO</b> is an open source project hosted by :<br/>
+			<a href="http://sourceforge.net" Target="new">
+					<img title="Sourceforge logo"
+						alt="Sourceforge logo small"
+						src="http://www.esrf.fr/computing/cs/tango/sourceforge.gif"
+						border=0 /> </a>
+		</td>
+		<!--- 2 Sourceforge Repositories --->
+		<td align="center">
+			Core and Tools :
+			<a href="http://tango-cs.cvs.sourceforge.net/tango-cs/" Target="new">
+			CVS repository</a> on
+			<a href="https://sourceforge.net/projects/tango-cs" Target=new>
+			tango-cs project</a>
+
+			<br/>
+
+			Device Servers :
+			<a href="http://tango-ds.cvs.sourceforge.net/tango-ds/" Target="new">
+					CVS repository</a> on
+			<a href="https://sourceforge.net/projects/tango-ds" Target=new>
+					tango-ds project</a>
+		</td>
+    </tr>
+</table>
+</p>
+
+</body>
+</html>

@@ -1,0 +1,5 @@
+
+
+rm -fr results
+./hear LT01/DI/ADC-BCM-01 C0${1}_ChannelValues
+

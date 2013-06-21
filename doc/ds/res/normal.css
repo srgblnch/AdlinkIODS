@@ -1,0 +1,23 @@
+
+
+table
+{
+    border-color: black;
+    border-width: 2px;
+    border-style: solid;
+	border-collapse: collapse;
+}
+
+thead {
+  background-color:#CCCCFF;
+}
+
+td, th {
+  padding: 0.5em;
+  border: 1px black solid;
+}
+
+tbody {
+    font-size: 0.8em;
+}
+
