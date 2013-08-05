@@ -243,8 +243,9 @@ make_shlib_dir:
 #-----------------------------------------
 #	 Install binary file
 #-----------------------------------------
-install:
-	cp bin/$(CLASS)  $(TANGO_HOME)/bin
+install: all
+	@mkdir -p $(prefix)/bin
+	cp bin/$(CLASS).$(DESTOS)  $(prefix)/bin/$(CLASS)
 
 #-----------------------------------------
 #	 Update class library and header files
