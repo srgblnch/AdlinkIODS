@@ -79,13 +79,14 @@ SL_EXT = so
 VERS_OPT = -Wl,-soname,
 endif
 
-INCLUDE_DIRS =  -I$(TANGO_HOME)/include	 -I$(SUPER_HOME) \
-                -I$(OMNI_HOME)/include \
+INCLUDE_DIRS =  -I$(TANGO_HOME)/include	\
+		-I$(SUPER_HOME)/include \
+		-I$(OMNI_HOME)/include \
 		-I$(DASK_HOME)/include \
 		-I$(GSL_HOME)/include \
 		-I. \
 		-I../include \
-                -I$(CPP_SERVERS)/include
+		-I$(CPP_SERVERS)/include
 
 OBJS_DIR    = obj-$(DESTOS)
 LIB_DIRS    = -L$(TANGO_HOME)/lib \

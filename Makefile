@@ -92,9 +92,9 @@ INCLUDE_DIRS =  -I$(TANGO_HOME)/include \
 		-I./dio \
 		-I./counter \
 		-I$(GSL_HOME) \
-		-I$(SUPER_HOME) \
+		-I$(SUPER_HOME)/include \
 		-I$(DIOSUPER_HOME)/include \
-                -I$(CPP_SERVERS)/include
+		-I$(CPP_SERVERS)/include
 
 OBJS_DIR    = obj-$(DESTOS)
 LIB_DIRS    = -L$(TANGO_HOME)/lib \
@@ -141,6 +141,9 @@ endif
 #-----------------------------------------
 #	Set  dependences
 #-----------------------------------------
+
+SUPER_OBJS = $(SUPER_HOME)/obj/AnalogDAQClass.o \
+		$(SUPER_HOME)/obj/AnalogDAQStateMachine.o
 
 SVC_OBJS = $(OBJS_DIR)/main.o	\
 		$(OBJS_DIR)/ClassFactory.o
@@ -199,7 +202,7 @@ link:
 	cd bin && rm -f AdlinkIODS && ln -s AdlinkIODS.$(DESTOS) AdlinkIODS
 
 bin/AdlinkIODS.$(DESTOS):  make_obj_dir make_bin_dir aux-$(DESTOS).a $(SVC_OBJS)
-	$(CC) $(SVC_OBJS) -o bin/AdlinkIODS.$(DESTOS) $(LFLAGS) ./aio/AdlinkAIO-$(DESTOS).a ./dio/AdlinkDIO-$(DESTOS).a   ./src/utils-$(DESTOS).a $(DIOSUPER_HOME)/lib/libtgclasses.a ./aio/AdlinkAIO-$(DESTOS).a ./counter/AdlinkIOCounter-$(DESTOS).a $(GSL_LIB_HOME)/libgsl.a $(GSL_LIB_HOME)/libgslcblas.a
+	$(CC) $(SUPER_OBJS) $(SVC_OBJS) -o bin/AdlinkIODS.$(DESTOS) $(LFLAGS) ./aio/AdlinkAIO-$(DESTOS).a ./dio/AdlinkDIO-$(DESTOS).a   ./src/utils-$(DESTOS).a $(DIOSUPER_HOME)/lib/libtgclasses.a ./aio/AdlinkAIO-$(DESTOS).a ./counter/AdlinkIOCounter-$(DESTOS).a $(GSL_LIB_HOME)/libgsl.a $(GSL_LIB_HOME)/libgslcblas.a
 	# todo I am statically linking lgsl and lgslblas because they are not
 	# part of the standard installation here at cells, I should tell
 	# systems to change this...
