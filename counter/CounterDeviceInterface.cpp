@@ -8,7 +8,7 @@ void CounterDeviceInterface::read(unsigned long & value)
 		D2K_GCTR_Read(
 			this->handler(),
 			this->m_counterID,
-			&value
+			(U32*)&value
 		));
 }
 
