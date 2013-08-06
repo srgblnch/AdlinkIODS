@@ -84,7 +84,8 @@ VERS_OPT = -Wl,-soname,
 endif
 
 
-INCLUDE_DIRS =  -I$(TANGO_HOME)/include  -I$(SUPER_HOME)/include \
+INCLUDE_DIRS =  -I$(TANGO_HOME)/include/tango \
+		-I$(SUPER_HOME)/include \
 		-I$(OMNI_HOME)/include \
 		-I.	\
 		-I../include \
