@@ -40,7 +40,23 @@ DASK_HOME     ?=  /homelocal/sicilia/drivers/adlink
 SUPER_HOME    ?=  /homelocal/sicilia/AbstractClasses/AnalogDAQ/
 #DIOSUPER_HOME ?=  /siciliarep/backups/rsunepc/projects/tango_ds/InputOutput/DigitalIO/abstract/
 DIOSUPER_HOME ?=  /siciliarep/build/svnco/tango_ds/InputOutput/DigitalIO/abstract/
-GSL_HOME      ?= /usr
+GSL_HOME      ?=  /usr
+ZMQ_HOME      ?=  /usr
+
+with-zmq      ?= true
+#-----------------------------------------
+#    Linking with zmq if necessary
+#    It is required by Tango >= 8
+#-----------------------------------------
+ifeq ($(with-zmq), true)
+	ZMQ_FLAGS = -L$(ZMQ_HOME) -lzmq
+else
+	ZMQ_FLAGS =
+endif
+
+######
+
+
 
 CPP_SERVERS  =  $(TANGO_HOME)/cppserver
 
@@ -117,7 +133,8 @@ LFLAGS =  $(DEBUG) $(LIB_DIRS)  		\
 				-lomnithread	\
 				-lCOS4			\
 				-lpthread		\
-				-lposix4 -lsocket -lnsl
+				-lposix4 -lsocket -lnsl \
+				$(ZMQ_FLAGS)
 endif
 
 ifdef linux
@@ -132,11 +149,9 @@ LFLAGS =  $(DEBUG) $(LIB_DIRS)  		\
 				-ldl -lpthread \
 				-l$(D2K_LIB) \
 				-lpci_dask \
-				-lrt
+				-lrt \
+				$(ZMQ_FLAGS)
 endif
-
-
-
 
 #-----------------------------------------
 #	Set  dependences
