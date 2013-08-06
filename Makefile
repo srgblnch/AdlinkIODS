@@ -258,7 +258,7 @@ make_shlib_dir:
 #-----------------------------------------
 #	 Install binary file
 #-----------------------------------------
-install: all
+install: 
 	@mkdir -p $(prefix)/bin
 	cp bin/$(CLASS).$(DESTOS)  $(prefix)/bin/$(CLASS)
 
