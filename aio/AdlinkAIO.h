@@ -259,6 +259,7 @@ public :
  */
 	Tango::DevBoolean enableLastValueEvents;
 
+
 	std::vector<std::string> statsSettings;
 //@}
 
@@ -622,6 +623,10 @@ public :
  */
 	virtual bool is_ExportFile_allowed(const CORBA::Any &any);
 /**
+ *	Execution allowed for ExportFile command.
+ */
+	virtual bool is_GetData_allowed(const CORBA::Any &any);
+/**
  * This Command will start the acquisition and will change the State to RUNNING.<br>
  *	It will register the hardware device if the previous state was STANDBY <br>
  *	The change from RUNNING State to ON is performed inside the always_executed_hook method. <br>
@@ -644,6 +649,8 @@ public :
 	void	calibration_auto();
 	void	calibration_save(Tango::DevULong bank);
 	void	calibration_load(Tango::DevULong bank);
+	Tango::DevVarDoubleArray *get_data(const Tango::DevVarLongStringArray* argin);
+
 /**
  * It imports inside the rawData buffer the contents of the file designed by FileName Attribute
  *	@return	Ok
@@ -677,6 +684,9 @@ protected :
 	//	Add your own data members here
 	//-----------------------------------------
 	
+	long unsigned m_trigger_count;
+	long unsigned m_count_data_ready;
+
 	
 	/// Value set depending on if the class_name is "AdlinkAI" or "AdlinkAO"
 	//  Input/Output Direction of the Channels to be managed,defined in this context:

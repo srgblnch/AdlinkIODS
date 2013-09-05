@@ -29,6 +29,10 @@ class StatsSettings {
 		bool event_buf_std_dev_enabled;
 		bool event_buf_quadratic_mean_enabled;
 
+		bool event_buf_mean_data_ready_enabled;
+		bool buf_mean_data_ready_enabled;
+
+
 		bool event_any_enabled() const
 		{
 			return event_last_mean_enabled
@@ -36,7 +40,8 @@ class StatsSettings {
 				|| event_last_quadratic_mean_enabled
 				|| event_buf_mean_enabled
 				|| event_buf_std_dev_enabled
-				|| event_buf_quadratic_mean_enabled;
+				|| event_buf_quadratic_mean_enabled
+				|| event_buf_mean_data_ready_enabled;
 		}
 
 		bool any_enabled() const

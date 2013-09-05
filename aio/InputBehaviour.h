@@ -275,6 +275,9 @@ public:
 	{ return m_displayableTriggers; }
 	inline void set_num_of_displayable_triggers(long ntrig)
 	{ m_displayableTriggers = ntrig; }
+	inline long long unsigned get_total_runs() const
+	{ return m_totalRuns; }
+
 
 	InputBehaviour(
 			AdlDeviceFactorySingleton::AdlBoardParams* p,

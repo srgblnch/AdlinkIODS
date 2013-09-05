@@ -190,7 +190,27 @@ CORBA::Any *ExportFileCmd::execute(Tango::DeviceImpl *device,const CORBA::Any &i
 	return insert((static_cast<AdlinkAIO *>(device))->export_file());
 }
 
+//+----------------------------------------------------------------------------
+//
+// method : 		GetDataCmd::execute()
+//
+// description : 	****************************
+//
+// in : - device : The device on which the command must be excuted
+//		- in_any : The command input data
+//
+// returns : The command output data (packed in the Any object)
+//
+//-----------------------------------------------------------------------------
+CORBA::Any *GetDataCmd::execute(Tango::DeviceImpl *device,const CORBA::Any &in_any)
+{
 
+	cout2 << "GetDataCmd::execute(): arrived" << endl;
+	const Tango::DevVarLongStringArray *argin;
+	extract(in_any, argin);
+
+	return insert((static_cast<AdlinkAIO *>(device))-> get_data(argin));
+}
 //
 //----------------------------------------------------------------
 //	Initialize pointer for singleton pattern
@@ -339,6 +359,12 @@ void AdlinkAIOClass::command_factory()
 		"File Name",
 		"Ok",
 		Tango::OPERATOR));
+
+	command_list.push_back(new GetDataCmd("GetData",
+				Tango::DEVVAR_LONGSTRINGARRAY, Tango::DEVVAR_DOUBLEARRAY,
+				"indexes and attribute name",
+				"Data (or part of data) specified by start and end indexes.",
+				Tango::OPERATOR));
 
 	//	add polling if any
 	for (unsigned int i=0 ; i<command_list.size(); i++)
@@ -909,6 +935,7 @@ void AdlinkAIOClass::set_default_property()
 		"  buf_mean\n"
 		"  buf_std_dev\n"
 		"  buf_quadratic_mean\n"
+		"  buf_mean_data_ready"
 		"</pre>\n"
 		"<i><b>last_</b>mean</i> means you want a new scalar attribute CXX_MeanLast\n"
 		"with the value of the last buffer mean.<br/>\n"
@@ -1151,13 +1178,21 @@ static void addInputChannelDynamicAttributes(AdlinkAIO *myds, int chanNumber)
 	}
 
 	if (stats.buf_mean_enabled) {
+		cout << "The mean values channels created"<<endl;
 		sprintf(attr_name, "C%02d_MeanValues", chanNumber);
 		std::auto_ptr<Tango::SpectrumAttr> lval(new SpectrumStatisticAttrib(attr_name, Stats::OperationMean, chanNumber));
 
+		if (stats.event_buf_mean_data_ready_enabled){
+			cout << "The channel mean values data ready event enabled" << endl;
+			lval->set_data_ready_event(true);
+		}
+
 		myds->add_attribute(lval.release());
 		if (stats.event_buf_mean_enabled) {
+			cout << "the channel mean values change event enabled" << endl;
 			myds->set_change_event(attr_name, true, false);
 		}
+
 	}
 
 	if (stats.last_std_dev_enabled) {
