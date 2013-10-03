@@ -2029,7 +2029,7 @@ Tango::DevVarDoubleArray * AdlinkAIO::get_data(const Tango::DevVarLongStringArra
 	long start_idx = argin->lvalue[0];
 	long end_idx = argin->lvalue[1];
 	bool err_flag = false;
-	m_trigger_count = 100;
+	//m_trigger_count = 100;
 
 	if (start_idx < 0 || (end_idx > m_trigger_count)
 			|| (start_idx > m_trigger_count)){
