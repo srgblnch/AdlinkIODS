@@ -505,6 +505,17 @@ void AdlinkAIOClass::attribute_factory(vector<Tango::Attr *> &att_list)
 	delay_source->set_memorized_init(true);
 	att_list.push_back(delay_source);
 
+	//	Attribute : DelaySource
+	DelayDataReadyAttrib	*delay_data_ready = new DelayDataReadyAttrib();
+	Tango::UserDefaultAttrProp	delay_data_ready_prop;
+	delay_data_ready_prop.set_label("Delay Data Ready");
+	delay_data_ready_prop.set_description("Is the number of point to wait for send the Data Ready Event.");
+	delay_data_ready_prop.set_format("%10d");
+	delay_data_ready->set_default_properties(delay_data_ready_prop);
+	delay_data_ready->set_memorized();
+	delay_data_ready->set_memorized_init(true);
+	att_list.push_back(delay_data_ready);
+
 	//	Attribute : ChannelSamplesPerTrigger
 	ChannelSamplesPerTriggerAttrib	*channel_buffer_size = new ChannelSamplesPerTriggerAttrib();
 	Tango::UserDefaultAttrProp	channel_buffer_size_prop;

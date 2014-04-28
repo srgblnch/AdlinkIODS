@@ -220,6 +220,7 @@ void AdlinkAIO::init_device()
 		attr_SampleRate_write = maxSampleRate;
 		attr_Delay_write = 0;
 		attr_DelaySource_write = 0;
+		attr_DelayDataReady_write = 10;
 		attr_ChannelSamplesPerTrigger_write = 1;
 		attr_NumOfTriggers_write = 1;
 		attr_MaxRefSource_write = maxSourceRange;
@@ -237,6 +238,7 @@ void AdlinkAIO::init_device()
 		attr_SampleRate_read = &attr_SampleRate_write;
 		attr_Delay_read = &attr_Delay_write;
 		attr_DelaySource_read = &attr_DelaySource_write;
+		attr_DelayDataReady_read = &attr_DelayDataReady_write;
 		attr_ChannelSamplesPerTrigger_read = &attr_ChannelSamplesPerTrigger_write;
 		attr_NumOfTriggers_read = &attr_NumOfTriggers_write;
 		attr_NumOfDisplayableTriggers_read = &attr_NumOfDisplayableTriggers_write;
@@ -694,6 +696,46 @@ void AdlinkAIO::write_DelaySource(Tango::WAttribute &attr)
 	}
 }
 
+
+//+----------------------------------------------------------------------------
+//
+// method : 		AdlinkAIO::read_DelaySource
+//
+// description : 	Extract real attribute values for DelaySource acquisition result.
+//
+//-----------------------------------------------------------------------------
+void AdlinkAIO::read_DelayDataReady(Tango::Attribute &attr)
+{
+	DEBUG_STREAM << "AdlinkAIO::read_DelayDataReady(Tango::Attribute &attr) entering... "<< endl;
+	attr.set_value(attr_DelayDataReady_read);
+
+}
+
+//+----------------------------------------------------------------------------
+//
+// method : 		AdlinkAIO::write_DelaySource
+//
+// description : 	Write DelaySource attribute values to hardware.
+//
+//-----------------------------------------------------------------------------
+void AdlinkAIO::write_DelayDataReady(Tango::WAttribute &attr)
+{
+	MemAttrWriteCheck mawc(this, attr);
+	DEBUG_STREAM << "AdlinkAIO::write_DelayDataReady(Tango::WAttribute &attr) entering... " << endl;
+	Tango::DevLong attr_tmp;
+	attr.get_write_value(attr_tmp);
+	if (attr_tmp < 1)
+	{
+		Tango::Except::throw_exception(
+			         "Invalid Value",
+			         "Valid values are greater than 0",
+			         _CFN_);
+	}
+	else{
+		attr_DelayDataReady_write = attr_tmp;
+		m_count_data_ready= m_trigger_count/attr_tmp;
+	}
+}
 //+----------------------------------------------------------------------------
 //
 // method : 		AdlinkAIO::read_ChannelSamplesPerTrigger
@@ -1984,7 +2026,7 @@ void AdlinkAIO::push_change_events()
 
 
 	if (this->m_statsSettings.event_buf_mean_data_ready_enabled){
-		if( m_count_data_ready < m_trigger_count/100 || m_trigger_count == adl->get_total_shots()){
+		if( m_count_data_ready < m_trigger_count/attr_DelayDataReady_write || m_trigger_count == adl->get_total_shots()){
 			m_count_data_ready++;
 			for (size_t channel=0; channel < this->numOfChannels; ++channel){
 				try{

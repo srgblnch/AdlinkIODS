@@ -180,6 +180,27 @@ bool AdlinkAIO::is_DelaySource_allowed(Tango::AttReqType type)
 	}
 	return true;
 }
+
+//+----------------------------------------------------------------------------
+//
+// method : 		AdlinkAIO::is_DelayDataReady_allowed
+//
+// description : 	Read/Write allowed for DelaySource attribute.
+//
+//-----------------------------------------------------------------------------
+bool AdlinkAIO::is_DelayDataReady_allowed(Tango::AttReqType type)
+{
+	/*if (get_state() == Tango::UNKNOWN       ||
+		get_state() == Tango::ON        ||
+		get_state() == Tango::RUNNING   ||
+		get_state() == Tango::FAULT)
+	{
+
+		return false;
+	}*/
+	return true;
+}
+
 //+----------------------------------------------------------------------------
 //
 // method : 		AdlinkAIO::is_SampleRate_allowed
