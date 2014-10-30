@@ -638,7 +638,7 @@ public :
  */
 	virtual bool is_ExportFile_allowed(const CORBA::Any &any);
 /**
- *	Execution allowed for ExportFile command.
+ *	Execution allowed for GetData command.
  */
 	virtual bool is_GetData_allowed(const CORBA::Any &any);
 /**

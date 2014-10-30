@@ -699,9 +699,9 @@ void AdlinkAIO::write_DelaySource(Tango::WAttribute &attr)
 
 //+----------------------------------------------------------------------------
 //
-// method : 		AdlinkAIO::read_DelaySource
+// method : 		AdlinkAIO::read_DelayDataReady
 //
-// description : 	Extract real attribute values for DelaySource acquisition result.
+// description : 	Extract real attribute values for DelayDataReady.
 //
 //-----------------------------------------------------------------------------
 void AdlinkAIO::read_DelayDataReady(Tango::Attribute &attr)
@@ -2032,7 +2032,6 @@ void AdlinkAIO::push_change_events()
 				try{
 					sprintf(attrName, "C%02d_MeanValues", channel);
 					InputBehaviour* adl = static_cast<InputBehaviour*>(this->adl);
-					cout << "Send Data Ready Event. Count "<< m_count_data_ready << endl;
 					push_data_ready_event(attrName,m_trigger_count);
 				}
 				catch(...){
@@ -2061,9 +2060,9 @@ Tango::DevVarDoubleArray * AdlinkAIO::get_data(const Tango::DevVarLongStringArra
 	DEBUG_STREAM << "AdlinkAIO::get_data" <<std::endl;
 
 	Tango::DevVarDoubleArray *argout;
-	if (argin->svalue.length() != 1 || argin->lvalue.length() !=2)
+	if (argin->lvalue.length() !=2 || argin->svalue.length() != 1)
 		Tango::Except::throw_exception((const char*) ("TANGO_DEVICE_ERROR"),
-				(const char*) ("Invalid number of parameters. Expects 3: attribute name and indexes (start and end index)"),
+				(const char*) ("Invalid number of parameters. Expects and array of 2 long numbers (start and end index) and an array of one string (attribute name) e.g. C00_MeanValues"),
 	            (const char*) ("AdlinkAIO::get_data"));
 
 	assert(this->m_isInput);
@@ -2076,7 +2075,7 @@ Tango::DevVarDoubleArray * AdlinkAIO::get_data(const Tango::DevVarLongStringArra
 	if (start_idx < 0 || (end_idx > m_trigger_count)
 			|| (start_idx > m_trigger_count)){
 		Tango::Except::throw_exception((const char*) ("TANGO_DEVICE_ERROR"),
-				(const char*) ("Invalid indexes. start <= end <= points"),
+				(const char*) ("Invalid indexes. start <= end <= number of points" ),
 				(const char*) ("AdlinkAIO::get_data"));
 	}
 

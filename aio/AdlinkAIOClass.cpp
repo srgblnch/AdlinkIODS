@@ -362,8 +362,8 @@ void AdlinkAIOClass::command_factory()
 
 	command_list.push_back(new GetDataCmd("GetData",
 				Tango::DEVVAR_LONGSTRINGARRAY, Tango::DEVVAR_DOUBLEARRAY,
-				"indexes and attribute name",
-				"Data (or part of data) specified by start and end indexes.",
+				"Two arrays ('DevVarLongStringArray'). First array contains two indexes: start & end. Second array contains the attribute name e.g. C00_MeanValues",
+				"Data (or part of data) specified by start and end indexes (both iclusive).",
 				Tango::OPERATOR));
 
 	//	add polling if any
@@ -509,7 +509,7 @@ void AdlinkAIOClass::attribute_factory(vector<Tango::Attr *> &att_list)
 	DelayDataReadyAttrib	*delay_data_ready = new DelayDataReadyAttrib();
 	Tango::UserDefaultAttrProp	delay_data_ready_prop;
 	delay_data_ready_prop.set_label("Delay Data Ready");
-	delay_data_ready_prop.set_description("Is the number of point to wait for send the Data Ready Event.");
+	delay_data_ready_prop.set_description("Number of points between emitting DATA_READY events.");
 	delay_data_ready_prop.set_format("%10d");
 	delay_data_ready->set_default_properties(delay_data_ready_prop);
 	delay_data_ready->set_memorized();
@@ -1189,18 +1189,15 @@ static void addInputChannelDynamicAttributes(AdlinkAIO *myds, int chanNumber)
 	}
 
 	if (stats.buf_mean_enabled) {
-		cout << "The mean values channels created"<<endl;
 		sprintf(attr_name, "C%02d_MeanValues", chanNumber);
 		std::auto_ptr<Tango::SpectrumAttr> lval(new SpectrumStatisticAttrib(attr_name, Stats::OperationMean, chanNumber));
 
 		if (stats.event_buf_mean_data_ready_enabled){
-			cout << "The channel mean values data ready event enabled" << endl;
 			lval->set_data_ready_event(true);
 		}
 
 		myds->add_attribute(lval.release());
 		if (stats.event_buf_mean_enabled) {
-			cout << "the channel mean values change event enabled" << endl;
 			myds->set_change_event(attr_name, true, false);
 		}
 
