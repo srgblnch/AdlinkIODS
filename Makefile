@@ -37,7 +37,7 @@ RELEASE    = Release_$(MAJOR_VERS)_$(MINOR_VERS)
 TANGO_HOME    ?=  /homelocal/sicilia/tango
 OMNI_HOME     ?=  /homelocal/sicilia/omniorb
 DASK_HOME     ?=  /homelocal/sicilia/drivers/adlink
-SUPER_HOME    ?=  /homelocal/sicilia/AbstractClasses/AnalogDAQ/
+SUPER_HOME    ?=  /homelocal/sicilia/AbstractClasses/AnalogDAQ
 #DIOSUPER_HOME ?=  /siciliarep/backups/rsunepc/projects/tango_ds/InputOutput/DigitalIO/abstract/
 DIOSUPER_HOME ?=  /siciliarep/build/svnco/tango_ds/InputOutput/DigitalIO/abstract/
 GSL_HOME      ?=  /usr
@@ -183,7 +183,7 @@ $(OBJS_DIR)/%.so.o: %.cpp $(SVC_INC)
 #-----------------------------------------
 
 #all: $(CLASS)
-all: bin/AdlinkIODS.$(DESTOS)
+all: bin/AdlinkIODS.$(DESTOS) link
 
 $(CLASS):	make_obj_dir make_bin_dir $(SVC_OBJS)
 	$(CC) $(SVC_OBJS) -o $(CLASS) $(LFLAGS)
