@@ -21,3 +21,33 @@ INFO FOR DEVELOPERS:
 		source besides doxygen. So it's some more notes. This can be compiled
 		into PDF using latex. It's the best entry point into this DS after
 		having read QuickStart.txt.
+
+INFO FOR COMPILATION:
+    - This device server needs adlink driver software to be installed in 
+      the same machine. At the time of writing these note, adlink sources could
+      be obtained from the manufacturer website (after account creation)
+      http://www.adlinktech.com/
+      Look for Linux drivers and in particular for PCIS-DASK/X and
+      D2K-DASK/X
+
+    - This device server depends on the AnalogDAQ Abstract Class that constitute
+      its superclass.
+      Source code for it can be obtained in the same repository as the
+      source code for this class. 
+      Typically: 
+         svn checkout https://svn.code.sf.net/p/tango-ds/code/DeviceClasses/StandardInterfaces/AnalogDAQ/trunk
+
+      To compile the Abstract Class simply go to the directory where you downloaded the software
+      and type `make`.
+      Then install it with `make install prefix=<installation-directory>`
+
+    - To compile the device server environment variables to point to the Adlink driver 
+      include/libraries (DASK_HOME) and the AnalogDAQ superclass (SUPER_HOME) have to be positioned. 
+      Do this by:
+          export DASK_HOME=<adlink-driverlib-directory>
+      and     
+          export SUPER_HOME=<analogdaq-superclass-installdir>
+
+    - Compile by typing `make` in the source directory
+
+    - Executable file and link to execute it will be found in bin/ directory after compilation
