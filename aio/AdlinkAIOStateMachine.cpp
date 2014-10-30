@@ -190,14 +190,12 @@ bool AdlinkAIO::is_DelaySource_allowed(Tango::AttReqType type)
 //-----------------------------------------------------------------------------
 bool AdlinkAIO::is_DelayDataReady_allowed(Tango::AttReqType type)
 {
-	/*if (get_state() == Tango::UNKNOWN       ||
+	if (get_state() == Tango::UNKNOWN       ||
 		get_state() == Tango::ON        ||
-		get_state() == Tango::RUNNING   ||
 		get_state() == Tango::FAULT)
 	{
-
 		return false;
-	}*/
+	}
 	return true;
 }
 
@@ -735,7 +733,7 @@ bool AdlinkAIO::is_ExportFile_allowed(const CORBA::Any &any)
 
 //--------------------------------------------------------
 /**
- *	Method      : DataReadyEvent::is_GetDataState_allowed()
+ *	Method      : AdlinkAIO::is_GetData_allowed()
  *	Description : Execution allowed for GetData command.
  */
 //--------------------------------------------------------
