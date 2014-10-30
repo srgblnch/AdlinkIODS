@@ -47,7 +47,7 @@ RELEASE    = Release_$(MAJOR_VERS)_$(MINOR_VERS)
 TANGO_HOME   ?=  /homelocal/sicilia/tango
 OMNI_HOME    ?=  /homelocal/sicilia/omniorb
 DASK_HOME    ?=  /homelocal/sicilia/drivers/adlink
-SUPER_HOME   ?=  ../abstract
+SUPER_HOME   ?=  /homelocal/sicilia/AbstractClasses/AnalogDAQ
 
 CPP_SERVERS  =  $(TANGO_HOME)/cppserver
 

@@ -37,7 +37,7 @@ RELEASE    = Release_$(MAJOR_VERS)_$(MINOR_VERS)
 TANGO_HOME  ?=  /homelocal/sicilia/tango
 OMNI_HOME   ?=  /homelocal/sicilia/omniorb
 DASK_HOME   ?=  /homelocal/sicilia/drivers/adlink
-SUPER_HOME  ?=  /homelocal/sicilia/AbstractClasses/AnalogDAQ/
+SUPER_HOME  ?=  /homelocal/sicilia/AbstractClasses/AnalogDAQ
 D2K_LIB     ?=  pci_dask2k
 GSL_HOME    ?=  /usr
 
