@@ -641,6 +641,11 @@ public :
  *	Execution allowed for GetData command.
  */
 	virtual bool is_GetData_allowed(const CORBA::Any &any);
+
+/**
+ *	Execution allowed for ClearBuffer command.
+ */
+	virtual bool is_ClearBuffer_allowed(const CORBA::Any &any);
 /**
  * This Command will start the acquisition and will change the State to RUNNING.<br>
  *	It will register the hardware device if the previous state was STANDBY <br>
@@ -665,6 +670,14 @@ public :
 	void	calibration_save(Tango::DevULong bank);
 	void	calibration_load(Tango::DevULong bank);
 	Tango::DevVarDoubleArray *get_data(const Tango::DevVarLongStringArray* argin);
+
+/**
+ * This command will clear the buffer of previously acquired data.<br>
+ *      In continuous acquisition mode it is strongly recommended to clear this buffer before starting a new scan<br>
+ *      Otherwise, data integrity is not guaranteed.<br>
+ *
+ */
+	void clear_buffer();
 
 /**
  * It imports inside the rawData buffer the contents of the file designed by FileName Attribute

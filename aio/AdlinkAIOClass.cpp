@@ -192,6 +192,26 @@ CORBA::Any *ExportFileCmd::execute(Tango::DeviceImpl *device,const CORBA::Any &i
 
 //+----------------------------------------------------------------------------
 //
+// method : 		ClearBufferCmd::execute()
+//
+// description : 	****************************
+//
+// in : - void
+//
+// returns : void
+//
+//-----------------------------------------------------------------------------
+CORBA::Any *ClearBufferCmd::execute(Tango::DeviceImpl *device,const CORBA::Any &in_any)
+{
+
+	cout2 << "ClearBufferCmd::execute(): arrived" << endl;
+
+	((static_cast<AdlinkAIO *>(device))->clear_buffer());
+	return new CORBA::Any();
+}
+
+//+----------------------------------------------------------------------------
+//
 // method : 		GetDataCmd::execute()
 //
 // description : 	****************************
@@ -358,6 +378,12 @@ void AdlinkAIOClass::command_factory()
 		Tango::DEV_VOID, Tango::DEV_BOOLEAN,
 		"File Name",
 		"Ok",
+		Tango::OPERATOR));
+
+	command_list.push_back(new ClearBufferCmd("ClearBuffer",
+		Tango::DEV_VOID, Tango::DEV_VOID,
+		"",
+		"Clear statistics buffer",
 		Tango::OPERATOR));
 
 	command_list.push_back(new GetDataCmd("GetData",

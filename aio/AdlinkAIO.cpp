@@ -2053,6 +2053,26 @@ void AdlinkAIO::push_change_events()
 
 }
 
+//+------------------------------------------------------------------
+/**
+ *      method: AdlinkAIO::clear_buffer
+ *
+ *      description:    method to execute "clear_buffer"
+ *      This command will clear the buffer of previously acquired data.<br>
+ *      In continuous acquisition mode it is strongly recommended to clear this buffer before starting a new scan<br>
+ *      Otherwise, data integrity is not guaranteed.<br>
+ *
+ */
+//+------------------------------------------------------------------
+void AdlinkAIO::clear_buffer()
+{
+	if (!this->adl)
+        return;
+
+	InputBehaviour* adl = static_cast<InputBehaviour*>(this->adl);
+
+	adl->m_statsCalculator.clear_buffer();
+}
 
 Tango::DevVarDoubleArray * AdlinkAIO::get_data(const Tango::DevVarLongStringArray* argin)
 {

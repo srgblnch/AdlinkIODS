@@ -546,6 +546,28 @@ public:
 
 
 
+class ClearBufferCmd : public Tango::Command
+{
+public:
+	ClearBufferCmd(const char   *name,
+	               Tango::CmdArgType in,
+				   Tango::CmdArgType out,
+				   const char        *in_desc,
+				   const char        *out_desc,
+				   Tango::DispLevel  level)
+	:Command(name,in,out,in_desc,out_desc, level)	{};
+
+	ClearBufferCmd(const char   *name,
+	               Tango::CmdArgType in,
+				   Tango::CmdArgType out)
+	:Command(name,in,out)	{};
+	~ClearBufferCmd() {};
+	
+	virtual CORBA::Any *execute (Tango::DeviceImpl *dev, const CORBA::Any &any);
+	virtual bool is_allowed (Tango::DeviceImpl *dev, const CORBA::Any &any)
+	{return (static_cast<AdlinkAIO *>(dev))->is_ClearBuffer_allowed(any);}
+};
+
 class GetDataCmd : public Tango::Command
 {
 public:

@@ -733,6 +733,33 @@ bool AdlinkAIO::is_ExportFile_allowed(const CORBA::Any &any)
 
 //--------------------------------------------------------
 /**
+ *	Method      : AdlinkAIO::is_ClearBuffer_allowed()
+ *	Description : Execution allowed for ClearBuffer command.
+ */
+//--------------------------------------------------------
+bool AdlinkAIO::is_ClearBuffer_allowed(const CORBA::Any &any)
+{
+	//	Not any excluded states for GetData command.
+
+	/*----- PROTECTED REGION ID(DataReadyEvent::GetDataStateAllowed) ENABLED START -----*/
+
+	/*----- PROTECTED REGION END -----*/	//	DataReadyEvent::GetDataStateAllowed
+	if (get_state() == Tango::UNKNOWN	||
+			get_state() == Tango::FAULT	||
+			get_state() == Tango::RUNNING /*||
+			get_state() == Tango::ON	||
+            */)
+		{
+			//	End of Generated Code
+
+			//	Re-Start of Generated Code
+			return false;
+		}
+	return true;
+}
+
+//--------------------------------------------------------
+/**
  *	Method      : AdlinkAIO::is_GetData_allowed()
  *	Description : Execution allowed for GetData command.
  */
