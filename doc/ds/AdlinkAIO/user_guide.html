@@ -23,9 +23,9 @@
 <p> <ul>
   <li><b>User's Guide for Adlink Analog Input Output</b></li>
   <li><b>Revision</b>: "2.0"</li>
-  <li><b>Author</b>: rsune &amp; srubio </li>
+  <li><b>Author</b>: rsune &amp; srubio &amp; zreszela &amp; vrey &amp; rhoms</li>
   <li><b>Implemented in</b>: C++</li>
-  <li><b>Last update</b>: 2009/09/10</li>
+  <li><b>Last update</b>: 2014/11/05</li>
   <li><b>NOTE</b>: Pogo does not recognize the project anymore, 
   so this file has to be updated manually.</li>
 </ul> </p>
@@ -296,6 +296,7 @@ all the available statistical attributes:
   buf_mean
   buf_std_dev
   buf_quadratic_mean
+  buf_mean_data_ready
 </pre>
 <i><b>last_</b>mean</i> means you want a new scalar attribute CXX_MeanLast
 with the value of the last buffer mean.<br/>
@@ -707,6 +708,11 @@ the written scalar, thus replacing a wave with a flat value.</td>
     <td>DEV_VOID</td>
     <td>DEV_BOOLEAN</td>
 </tr>
+<tr>
+    <td><a href="#cmd_ClearBuffer">ClearBuffer</a></td>
+    <td>DEV_VOID</td>
+    <td>DEV_VOID</td>
+</tr>
 </tbody>
 </table>
 </p>
@@ -894,11 +900,22 @@ It's the only way to unblock the device from FAULT State to STANDBY.</li>
 
 
 
-
-
-
-
-
+<a name="cmd_ClearBuffer" />
+<h3>11 - ClearBuffer</h3>
+<p>
+<ul>
+<li><b>Description: </b>  This command will clear the buffer of previously acquired data.
+ In continuous acquisition mode it is strongly recommended to clear this buffer before starting a new scan
+ Otherwise, data integrity is not guaranteed
+</li>
+<li><b>Argin: DEV_VOID</b>
+ : </li>
+<li><b>Argout: DEV_VOID</b>
+ : </li>
+<li><b>Command allowed for: </b><ul>
+</ul>
+</ul>
+</p>
 
 
 
