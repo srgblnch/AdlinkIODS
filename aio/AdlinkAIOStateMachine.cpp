@@ -180,6 +180,25 @@ bool AdlinkAIO::is_DelaySource_allowed(Tango::AttReqType type)
 	}
 	return true;
 }
+
+//+----------------------------------------------------------------------------
+//
+// method : 		AdlinkAIO::is_DelayDataReady_allowed
+//
+// description : 	Read/Write allowed for DelaySource attribute.
+//
+//-----------------------------------------------------------------------------
+bool AdlinkAIO::is_DelayDataReady_allowed(Tango::AttReqType type)
+{
+	if (get_state() == Tango::UNKNOWN       ||
+		get_state() == Tango::ON        ||
+		get_state() == Tango::FAULT)
+	{
+		return false;
+	}
+	return true;
+}
+
 //+----------------------------------------------------------------------------
 //
 // method : 		AdlinkAIO::is_SampleRate_allowed
@@ -712,4 +731,57 @@ bool AdlinkAIO::is_ExportFile_allowed(const CORBA::Any &any)
 	return true;
 }
 
+//--------------------------------------------------------
+/**
+ *	Method      : AdlinkAIO::is_ClearBuffer_allowed()
+ *	Description : Execution allowed for ClearBuffer command.
+ */
+//--------------------------------------------------------
+bool AdlinkAIO::is_ClearBuffer_allowed(const CORBA::Any &any)
+{
+	//	Not any excluded states for GetData command.
+
+	/*----- PROTECTED REGION ID(DataReadyEvent::GetDataStateAllowed) ENABLED START -----*/
+
+	/*----- PROTECTED REGION END -----*/	//	DataReadyEvent::GetDataStateAllowed
+	if (get_state() == Tango::UNKNOWN	||
+			get_state() == Tango::FAULT	||
+			get_state() == Tango::RUNNING /*||
+			get_state() == Tango::ON	||
+            */)
+		{
+			//	End of Generated Code
+
+			//	Re-Start of Generated Code
+			return false;
+		}
+	return true;
+}
+
+//--------------------------------------------------------
+/**
+ *	Method      : AdlinkAIO::is_GetData_allowed()
+ *	Description : Execution allowed for GetData command.
+ */
+//--------------------------------------------------------
+
+bool AdlinkAIO::is_GetData_allowed(const CORBA::Any &any)
+{
+	//	Not any excluded states for GetData command.
+
+	/*----- PROTECTED REGION ID(DataReadyEvent::GetDataStateAllowed) ENABLED START -----*/
+
+	/*----- PROTECTED REGION END -----*/	//	DataReadyEvent::GetDataStateAllowed
+	if (get_state() == Tango::UNKNOWN	||
+			get_state() == Tango::FAULT	/*||
+			get_state() == Tango::ON	||
+			get_state() == Tango::RUNNING*/)
+		{
+			//	End of Generated Code
+
+			//	Re-Start of Generated Code
+			return false;
+		}
+	return true;
+}
 }	// namespace AdlinkAIO_ns

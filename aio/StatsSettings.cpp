@@ -36,6 +36,9 @@ void StatsSettings::set_config(const std::string& conf)
 	event_buf_std_dev_enabled = false;
 	event_buf_quadratic_mean_enabled = false;
 
+	buf_mean_data_ready_enabled= false;
+	event_buf_mean_data_ready_enabled = false;
+
 	std::stringstream ss(conf);
 	std::string op, op_old;
 	
@@ -57,6 +60,9 @@ void StatsSettings::set_config(const std::string& conf)
 			__SS_READ_CONF_(buf_mean);
 			__SS_READ_CONF_(buf_std_dev);
 			__SS_READ_CONF_(buf_quadratic_mean);
+
+			__SS_READ_CONF_(buf_mean_data_ready);
+
 
 #	undef __SS_READ_CONF_
 
@@ -89,8 +95,11 @@ std::string StatsSettings::get_config() const
 			__SS_WRITE_CONF_(buf_std_dev);
 			__SS_WRITE_CONF_(buf_quadratic_mean);
 
-#	undef __SS_WRITE_CONF_
+			__SS_WRITE_CONF_(buf_mean_data_ready);
 
+
+
+#	undef __SS_WRITE_CONF_
 	return ss.str();
 }
 

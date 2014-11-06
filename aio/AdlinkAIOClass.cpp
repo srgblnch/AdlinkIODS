@@ -190,7 +190,47 @@ CORBA::Any *ExportFileCmd::execute(Tango::DeviceImpl *device,const CORBA::Any &i
 	return insert((static_cast<AdlinkAIO *>(device))->export_file());
 }
 
+//+----------------------------------------------------------------------------
+//
+// method : 		ClearBufferCmd::execute()
+//
+// description : 	****************************
+//
+// in : - void
+//
+// returns : void
+//
+//-----------------------------------------------------------------------------
+CORBA::Any *ClearBufferCmd::execute(Tango::DeviceImpl *device,const CORBA::Any &in_any)
+{
 
+	cout2 << "ClearBufferCmd::execute(): arrived" << endl;
+
+	((static_cast<AdlinkAIO *>(device))->clear_buffer());
+	return new CORBA::Any();
+}
+
+//+----------------------------------------------------------------------------
+//
+// method : 		GetDataCmd::execute()
+//
+// description : 	****************************
+//
+// in : - device : The device on which the command must be excuted
+//		- in_any : The command input data
+//
+// returns : The command output data (packed in the Any object)
+//
+//-----------------------------------------------------------------------------
+CORBA::Any *GetDataCmd::execute(Tango::DeviceImpl *device,const CORBA::Any &in_any)
+{
+
+	cout2 << "GetDataCmd::execute(): arrived" << endl;
+	const Tango::DevVarLongStringArray *argin;
+	extract(in_any, argin);
+
+	return insert((static_cast<AdlinkAIO *>(device))-> get_data(argin));
+}
 //
 //----------------------------------------------------------------
 //	Initialize pointer for singleton pattern
@@ -340,6 +380,18 @@ void AdlinkAIOClass::command_factory()
 		"Ok",
 		Tango::OPERATOR));
 
+	command_list.push_back(new ClearBufferCmd("ClearBuffer",
+		Tango::DEV_VOID, Tango::DEV_VOID,
+		"",
+		"Clear statistics buffer",
+		Tango::OPERATOR));
+
+	command_list.push_back(new GetDataCmd("GetData",
+				Tango::DEVVAR_LONGSTRINGARRAY, Tango::DEVVAR_DOUBLEARRAY,
+				"Two arrays ('DevVarLongStringArray'). First array contains two indexes: start & end. Second array contains the attribute name e.g. C00_MeanValues",
+				"Data (or part of data) specified by start and end indexes (both iclusive).",
+				Tango::OPERATOR));
+
 	//	add polling if any
 	for (unsigned int i=0 ; i<command_list.size(); i++)
 	{
@@ -478,6 +530,17 @@ void AdlinkAIOClass::attribute_factory(vector<Tango::Attr *> &att_list)
 	delay_source->set_memorized();
 	delay_source->set_memorized_init(true);
 	att_list.push_back(delay_source);
+
+	//	Attribute : DelaySource
+	DelayDataReadyAttrib	*delay_data_ready = new DelayDataReadyAttrib();
+	Tango::UserDefaultAttrProp	delay_data_ready_prop;
+	delay_data_ready_prop.set_label("Delay Data Ready");
+	delay_data_ready_prop.set_description("Number of points between emitting DATA_READY events.");
+	delay_data_ready_prop.set_format("%10d");
+	delay_data_ready->set_default_properties(delay_data_ready_prop);
+	delay_data_ready->set_memorized();
+	delay_data_ready->set_memorized_init(true);
+	att_list.push_back(delay_data_ready);
 
 	//	Attribute : ChannelSamplesPerTrigger
 	ChannelSamplesPerTriggerAttrib	*channel_buffer_size = new ChannelSamplesPerTriggerAttrib();
@@ -909,6 +972,7 @@ void AdlinkAIOClass::set_default_property()
 		"  buf_mean\n"
 		"  buf_std_dev\n"
 		"  buf_quadratic_mean\n"
+		"  buf_mean_data_ready"
 		"</pre>\n"
 		"<i><b>last_</b>mean</i> means you want a new scalar attribute CXX_MeanLast\n"
 		"with the value of the last buffer mean.<br/>\n"
@@ -1154,10 +1218,15 @@ static void addInputChannelDynamicAttributes(AdlinkAIO *myds, int chanNumber)
 		sprintf(attr_name, "C%02d_MeanValues", chanNumber);
 		std::auto_ptr<Tango::SpectrumAttr> lval(new SpectrumStatisticAttrib(attr_name, Stats::OperationMean, chanNumber));
 
+		if (stats.event_buf_mean_data_ready_enabled){
+			lval->set_data_ready_event(true);
+		}
+
 		myds->add_attribute(lval.release());
 		if (stats.event_buf_mean_enabled) {
 			myds->set_change_event(attr_name, true, false);
 		}
+
 	}
 
 	if (stats.last_std_dev_enabled) {

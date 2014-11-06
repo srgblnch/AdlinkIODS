@@ -369,6 +369,20 @@ public:
 	{return (static_cast<AdlinkAIO *>(dev))->is_LastValues_allowed(ty);}
 };
 
+class DelayDataReadyAttrib: public Tango::Attr
+{
+public:
+        DelayDataReadyAttrib():Attr("DelayDataReady", Tango::DEV_LONG, Tango::READ_WRITE) {};
+	~DelayDataReadyAttrib() {};
+
+	virtual void read(Tango::DeviceImpl *dev,Tango::Attribute &att)
+	{(static_cast<AdlinkAIO *>(dev))->read_DelayDataReady(att);}
+	virtual void write(Tango::DeviceImpl *dev,Tango::WAttribute &att)
+	{(static_cast<AdlinkAIO *>(dev))->write_DelayDataReady(att);}
+	virtual bool is_allowed(Tango::DeviceImpl *dev,Tango::AttReqType ty)
+	{return (static_cast<AdlinkAIO *>(dev))->is_DelayDataReady_allowed(ty);}
+};
+
 //=========================================
 //	Define classes for commands
 //=========================================
@@ -530,6 +544,51 @@ public:
 	{return (static_cast<AdlinkAIO *>(dev))->is_Start_allowed(any);}
 };
 
+
+
+class ClearBufferCmd : public Tango::Command
+{
+public:
+	ClearBufferCmd(const char   *name,
+	               Tango::CmdArgType in,
+				   Tango::CmdArgType out,
+				   const char        *in_desc,
+				   const char        *out_desc,
+				   Tango::DispLevel  level)
+	:Command(name,in,out,in_desc,out_desc, level)	{};
+
+	ClearBufferCmd(const char   *name,
+	               Tango::CmdArgType in,
+				   Tango::CmdArgType out)
+	:Command(name,in,out)	{};
+	~ClearBufferCmd() {};
+	
+	virtual CORBA::Any *execute (Tango::DeviceImpl *dev, const CORBA::Any &any);
+	virtual bool is_allowed (Tango::DeviceImpl *dev, const CORBA::Any &any)
+	{return (static_cast<AdlinkAIO *>(dev))->is_ClearBuffer_allowed(any);}
+};
+
+class GetDataCmd : public Tango::Command
+{
+public:
+	GetDataCmd(const char   *name,
+	               Tango::CmdArgType in,
+				   Tango::CmdArgType out,
+				   const char        *in_desc,
+				   const char        *out_desc,
+				   Tango::DispLevel  level)
+	:Command(name,in,out,in_desc,out_desc, level)	{};
+
+	GetDataCmd(const char   *name,
+	               Tango::CmdArgType in,
+				   Tango::CmdArgType out)
+	:Command(name,in,out)	{};
+	~GetDataCmd() {};
+
+	virtual CORBA::Any *execute (Tango::DeviceImpl *dev, const CORBA::Any &any);
+	virtual bool is_allowed (Tango::DeviceImpl *dev, const CORBA::Any &any)
+	{return (static_cast<AdlinkAIO *>(dev))->is_GetData_allowed(any);}
+};
 
 
 //

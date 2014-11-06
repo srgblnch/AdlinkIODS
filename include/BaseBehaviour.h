@@ -194,6 +194,10 @@ public:
 		{	return this->m_infiniteRetrigger; }
 	/// @}
 
+	//RH
+	inline int get_total_shots() const
+	{ return m_totalShots; }
+
 	inline void set_delay(unsigned d)
 	{	this->m_delay = d; }
 

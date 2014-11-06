@@ -92,6 +92,7 @@ namespace Stats
 		}
 
 		bool calc_stats(InputBehaviour*);
+		void clear_buffer();
 
 		bool get_last(SelectedOperation operation, unsigned channel, double &mean, struct timeval& time) const;
 

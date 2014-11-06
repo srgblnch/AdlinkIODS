@@ -220,6 +220,7 @@ void AdlinkAIO::init_device()
 		attr_SampleRate_write = maxSampleRate;
 		attr_Delay_write = 0;
 		attr_DelaySource_write = 0;
+		attr_DelayDataReady_write = 10;
 		attr_ChannelSamplesPerTrigger_write = 1;
 		attr_NumOfTriggers_write = 1;
 		attr_MaxRefSource_write = maxSourceRange;
@@ -237,6 +238,7 @@ void AdlinkAIO::init_device()
 		attr_SampleRate_read = &attr_SampleRate_write;
 		attr_Delay_read = &attr_Delay_write;
 		attr_DelaySource_read = &attr_DelaySource_write;
+		attr_DelayDataReady_read = &attr_DelayDataReady_write;
 		attr_ChannelSamplesPerTrigger_read = &attr_ChannelSamplesPerTrigger_write;
 		attr_NumOfTriggers_read = &attr_NumOfTriggers_write;
 		attr_NumOfDisplayableTriggers_read = &attr_NumOfDisplayableTriggers_write;
@@ -329,7 +331,7 @@ void AdlinkAIO::init_device()
 			}
 		}
 
-/// 5. Give meaningful default values to attributes
+	/// 5. Give meaningful default values to attributes
 		this->adl->range().set_range_id(AD_B_10_V);
 		this->adl->adapt_sample_rate(this->attr_SampleRate_write);
 		this->attr_SampleRate_write = this->adl->sample_rate();
@@ -341,6 +343,7 @@ void AdlinkAIO::init_device()
 		attr_ChannelSamplesPerTrigger_write = this->adl->channel_samples_per_trigger();
 		
 		this->build_buffered_channels_list();
+
 
 /// 6. Set status
 		set_state(Tango::STANDBY);
@@ -401,6 +404,7 @@ void AdlinkAIO::get_device_property()
 	dev_prop.push_back(Tango::DbDatum("EnableChannelValueEvents"));
 	dev_prop.push_back(Tango::DbDatum("EnableLastValueEvents"));
 	dev_prop.push_back(Tango::DbDatum("StatsSettings"));
+
 
 	//	Call database and extract values
 	//--------------------------------------------
@@ -692,6 +696,46 @@ void AdlinkAIO::write_DelaySource(Tango::WAttribute &attr)
 	}
 }
 
+
+//+----------------------------------------------------------------------------
+//
+// method : 		AdlinkAIO::read_DelayDataReady
+//
+// description : 	Extract real attribute values for DelayDataReady.
+//
+//-----------------------------------------------------------------------------
+void AdlinkAIO::read_DelayDataReady(Tango::Attribute &attr)
+{
+	DEBUG_STREAM << "AdlinkAIO::read_DelayDataReady(Tango::Attribute &attr) entering... "<< endl;
+	attr.set_value(attr_DelayDataReady_read);
+
+}
+
+//+----------------------------------------------------------------------------
+//
+// method : 		AdlinkAIO::write_DelaySource
+//
+// description : 	Write DelaySource attribute values to hardware.
+//
+//-----------------------------------------------------------------------------
+void AdlinkAIO::write_DelayDataReady(Tango::WAttribute &attr)
+{
+	MemAttrWriteCheck mawc(this, attr);
+	DEBUG_STREAM << "AdlinkAIO::write_DelayDataReady(Tango::WAttribute &attr) entering... " << endl;
+	Tango::DevLong attr_tmp;
+	attr.get_write_value(attr_tmp);
+	if (attr_tmp < 1)
+	{
+		Tango::Except::throw_exception(
+			         "Invalid Value",
+			         "Valid values are greater than 0",
+			         _CFN_);
+	}
+	else{
+		attr_DelayDataReady_write = attr_tmp;
+		m_count_data_ready= m_trigger_count/attr_tmp;
+	}
+}
 //+----------------------------------------------------------------------------
 //
 // method : 		AdlinkAIO::read_ChannelSamplesPerTrigger
@@ -1544,6 +1588,11 @@ void AdlinkAIO::start()
 		this->adl->start();
 		this->adl->update_status();
 	}
+
+	m_trigger_count = 0;
+	m_count_data_ready = 0;
+
+
 }
 
 
@@ -1897,6 +1946,7 @@ void AdlinkAIO::push_change_events()
 {
 	assert(this->m_isInput);
 	struct timeval lastAcqTime;
+	m_trigger_count++;
 
 	/// @todo use DataReady events instead of CHANGE events... ?
 	try {
@@ -1974,12 +2024,114 @@ void AdlinkAIO::push_change_events()
 #undef __ADIODS_FIRE_STATS_EVENT
 #undef __AFSE
 
+
+	if (this->m_statsSettings.event_buf_mean_data_ready_enabled){
+		if( m_count_data_ready < m_trigger_count/attr_DelayDataReady_write || m_trigger_count == adl->get_total_shots()){
+			m_count_data_ready++;
+			for (size_t channel=0; channel < this->numOfChannels; ++channel){
+				try{
+					sprintf(attrName, "C%02d_MeanValues", channel);
+					InputBehaviour* adl = static_cast<InputBehaviour*>(this->adl);
+					push_data_ready_event(attrName,m_trigger_count);
+				}
+				catch(...){
+					ERROR_STREAM	<< _CFN_
+									<< " Serious problems trying to send data ready events!\n"
+									<< " Probably: Unable to get Tango Monitor.\n"
+									<< std::endl;
+				}
+			}
+		}
+	}
+
 	} catch (...) {
 		ERROR_STREAM	<< _CFN_ 
 						<< " Serious problems trying to send events!\n"
 						<< " Probably: Unable to get Tango Monitor.\n"
 						<< std::endl;
 	}
+
+}
+
+//+------------------------------------------------------------------
+/**
+ *      method: AdlinkAIO::clear_buffer
+ *
+ *      description:    method to execute "clear_buffer"
+ *      This command will clear the buffer of previously acquired data.<br>
+ *      In continuous acquisition mode it is strongly recommended to clear this buffer before starting a new scan<br>
+ *      Otherwise, data integrity is not guaranteed.<br>
+ *
+ */
+//+------------------------------------------------------------------
+void AdlinkAIO::clear_buffer()
+{
+	if (!this->adl)
+        return;
+
+	InputBehaviour* adl = static_cast<InputBehaviour*>(this->adl);
+
+	adl->m_statsCalculator.clear_buffer();
+}
+
+Tango::DevVarDoubleArray * AdlinkAIO::get_data(const Tango::DevVarLongStringArray* argin)
+{
+
+	DEBUG_STREAM << "AdlinkAIO::get_data" <<std::endl;
+
+	Tango::DevVarDoubleArray *argout;
+	if (argin->lvalue.length() !=2 || argin->svalue.length() != 1)
+		Tango::Except::throw_exception((const char*) ("TANGO_DEVICE_ERROR"),
+				(const char*) ("Invalid number of parameters. Expects and array of 2 long numbers (start and end index) and an array of one string (attribute name) e.g. C00_MeanValues"),
+	            (const char*) ("AdlinkAIO::get_data"));
+
+	assert(this->m_isInput);
+	InputBehaviour* adl = static_cast<InputBehaviour*>(this->adl);
+	long start_idx = argin->lvalue[0];
+	long end_idx = argin->lvalue[1];
+	bool err_flag = false;
+	//m_trigger_count = 100;
+
+	if (start_idx < 0 || (end_idx > m_trigger_count)
+			|| (start_idx > m_trigger_count)){
+		Tango::Except::throw_exception((const char*) ("TANGO_DEVICE_ERROR"),
+				(const char*) ("Invalid indexes. start <= end <= number of points" ),
+				(const char*) ("AdlinkAIO::get_data"));
+	}
+
+	std::string attr_name = string(CORBA::string_dup(argin->svalue[0]));
+	int channel = attr_name.c_str()[2] - 0x30;
+	Stats::SelectedOperation op;
+
+	if(attr_name.find("StdDevValues")!=std::string::npos){
+		op = Stats::OperationStdDev;
+	} else if(attr_name.find("QuadraticMeanValues")!=std::string::npos){
+		op = Stats::OperationQuadraticMean;
+	} else if(attr_name.find("MeanValues")!=std::string::npos){
+			op = Stats::OperationMean;
+	} else {
+		Tango::Except::throw_exception((const char*) ("TANGO_DEVICE_ERROR"),
+						(const char*) ("Invalid channels"),
+						(const char*) ("AdlinkAIO::get_data"));
+	}
+
+	const double* data;
+	size_t dim_x;
+	struct timeval time;
+
+	argout = new Tango::DevVarDoubleArray();
+	if(adl->m_statsCalculator.get_last_buffer(op, channel, data, dim_x, time)){
+		size_t length = (end_idx - start_idx) + 1;
+		argout->length(length);
+
+		for(int i=0, j=start_idx; j<= end_idx; i++, j++){
+			(*argout)[i] = data[j];
+		}
+	} else {
+		std::cout << "Error during read the buffer. " << std::endl;
+	}
+
+	 return argout;
 }
 
 }	//	namespace

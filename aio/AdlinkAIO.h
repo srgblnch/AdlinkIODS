@@ -123,6 +123,8 @@ public :
 		Tango::DevLong	attr_Delay_write;
 		Tango::DevLong  *attr_DelaySource_read;
 		Tango::DevLong  attr_DelaySource_write;
+		Tango::DevLong	*attr_DelayDataReady_read;
+		Tango::DevLong	attr_DelayDataReady_write;
 		Tango::DevLong	*attr_ChannelSamplesPerTrigger_read;
 		Tango::DevLong	attr_ChannelSamplesPerTrigger_write;
 		Tango::DevLong	*attr_NumOfTriggers_read;
@@ -259,6 +261,7 @@ public :
  */
 	Tango::DevBoolean enableLastValueEvents;
 
+
 	std::vector<std::string> statsSettings;
 //@}
 
@@ -353,6 +356,14 @@ public :
  *	Write DelaySource attribute values to hardware.
  */
 	virtual void write_DelaySource(Tango::WAttribute &attr);
+/**
+ *	Extract real attribute values for DelayDataReady.
+ */
+	virtual void read_DelayDataReady(Tango::Attribute &attr);
+/**
+ *	Write DelayDataReady attribute values.
+ */
+	virtual void write_DelayDataReady(Tango::WAttribute &attr);
 /**
  *	Extract real attribute values for SampleRate acquisition result.
  */
@@ -514,6 +525,11 @@ public :
  */
 	virtual bool is_DelaySource_allowed(Tango::AttReqType type);
 /**
+ *	Read/Write allowed for DelaySource attribute.
+ */
+	virtual bool is_DelayDataReady_allowed(Tango::AttReqType type);
+
+/**
  *	Read/Write allowed for SampleRate attribute.
  */
 	virtual bool is_SampleRate_allowed(Tango::AttReqType type);
@@ -622,6 +638,15 @@ public :
  */
 	virtual bool is_ExportFile_allowed(const CORBA::Any &any);
 /**
+ *	Execution allowed for GetData command.
+ */
+	virtual bool is_GetData_allowed(const CORBA::Any &any);
+
+/**
+ *	Execution allowed for ClearBuffer command.
+ */
+	virtual bool is_ClearBuffer_allowed(const CORBA::Any &any);
+/**
  * This Command will start the acquisition and will change the State to RUNNING.<br>
  *	It will register the hardware device if the previous state was STANDBY <br>
  *	The change from RUNNING State to ON is performed inside the always_executed_hook method. <br>
@@ -644,6 +669,16 @@ public :
 	void	calibration_auto();
 	void	calibration_save(Tango::DevULong bank);
 	void	calibration_load(Tango::DevULong bank);
+	Tango::DevVarDoubleArray *get_data(const Tango::DevVarLongStringArray* argin);
+
+/**
+ * This command will clear the buffer of previously acquired data.<br>
+ *      In continuous acquisition mode it is strongly recommended to clear this buffer before starting a new scan<br>
+ *      Otherwise, data integrity is not guaranteed.<br>
+ *
+ */
+	void clear_buffer();
+
 /**
  * It imports inside the rawData buffer the contents of the file designed by FileName Attribute
  *	@return	Ok
@@ -677,6 +712,10 @@ protected :
 	//	Add your own data members here
 	//-----------------------------------------
 	
+	long unsigned m_trigger_count;
+	long unsigned m_count_data_ready;
+
+
 	
 	/// Value set depending on if the class_name is "AdlinkAI" or "AdlinkAO"
 	//  Input/Output Direction of the Channels to be managed,defined in this context:

@@ -55,6 +55,12 @@ namespace Stats
 	}
 
 
+	void StatsCalculator::clear_buffer()
+	{
+			m_bufferOperationResultsList.clear();
+			// m_bufferOperationResultsList.resize(0);
+    }     
+
 	bool StatsCalculator::calc_stats(InputBehaviour* input)
 	{
 		if (m_hardestOperation == OperationNone)
