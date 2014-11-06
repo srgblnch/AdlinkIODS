@@ -23,7 +23,7 @@
 <p> <ul>
   <li><b>User's Guide for Adlink Analog Input Output</b></li>
   <li><b>Revision</b>: "2.0"</li>
-  <li><b>Author</b>: rsune &amp; srubio &amp; zreszela &amp; vrey &amp; rhoms</li>
+  <li><b>Author</b>: rsune &amp; srubio &amp; zreszela &amp; vrey &amp; rhoms &amp; droldan</li>
   <li><b>Implemented in</b>: C++</li>
   <li><b>Last update</b>: 2014/11/05</li>
   <li><b>NOTE</b>: Pogo does not recognize the project anymore, 
@@ -296,7 +296,6 @@ all the available statistical attributes:
   buf_mean
   buf_std_dev
   buf_quadratic_mean
-  buf_mean_data_ready
 </pre>
 <i><b>last_</b>mean</i> means you want a new scalar attribute CXX_MeanLast
 with the value of the last buffer mean.<br/>
@@ -304,7 +303,13 @@ with the value of the last buffer mean.<br/>
 with the means of the last NumOfTriggers buffers.<br/>
 <i><b>event</b></i> after another token means that the previous attribute 
 (ex CXX_MeanLast or CXX_MeanValues) will automatically push change events
-when new data is available.
+when new data is available.<br/>
+
+The previous rouls do not apply to the following properties:
+<pre>
+  buf_mean_data_ready
+</pre>
+Configures CXX_MeanValues attributes to emit data ready events.
 </td></tr>
 
 
@@ -557,6 +562,8 @@ the written scalar, thus replacing a wave with a flat value.</td>
 <tr><td><b>FileName</b></td>
 <td>DEV_STRING</td><td>READ_WRITE</td><td>No</td></tr>
 
+<tr><td><b>DelayDataReady</b>: Configures how often the data ready events will be emitted. Its value indicates delay [acquisition points (triggers)] in between emission of the events.</td>
+<td>DEV_LONG</td><td>READ_WRITE</td><td>No</td></tr>
 
 
 
@@ -707,6 +714,11 @@ the written scalar, thus replacing a wave with a flat value.</td>
     <td><a href="#cmd_ExportFile">ExportFile</a></td>
     <td>DEV_VOID</td>
     <td>DEV_BOOLEAN</td>
+</tr>
+<tr>
+    <td><a href="#cmd_GetData">GetData</a></td>
+    <td>DEV_VAR_LONG_STRING_ARRAY</td>
+    <td>DEV_VAR_DOUBLE_ARRAY</td>
 </tr>
 <tr>
     <td><a href="#cmd_ClearBuffer">ClearBuffer</a></td>
@@ -899,13 +911,28 @@ It's the only way to unblock the device from FAULT State to STANDBY.</li>
 </p>
 
 
+<a name="cmd_GetData" />
+<h3>11 - GetData</h3>
+<p>
+<ul>
+<li><b>Description: </b>  This command extracts data from the statisctical buffer. 
+</li>
+<li><b>Argin: DEV_VAR_LONG_STRING_ARRAY</b>: The LONG array contains two indexes: start & end. The STRING array contains the attribute name e.g. C00_MeanValues" 
+ : </li>
+<li><b>Argout: DEV_VAR_DOUBLE_ARRAY</b>: Data (or part of data) specified by start and end indexes (both iclusive)
+ : </li>
+<li><b>Command allowed for: </b><ul>
+</ul>
+</ul>
+</p>
 
 <a name="cmd_ClearBuffer" />
 <h3>11 - ClearBuffer</h3>
 <p>
 <ul>
-<li><b>Description: </b>  This command will clear the buffer of previously acquired data.
- In continuous acquisition mode it is strongly recommended to clear this buffer before starting a new scan
+<li><b>Description: </b>  This command will clear the buffer of previously acquired data (statistical arrays).
+ In continuous acquisition mode, when data are extracted durind the acquisition process, 
+ it is strongly recommended to clear this buffer before starting a new scan.
  Otherwise, data integrity is not guaranteed
 </li>
 <li><b>Argin: DEV_VOID</b>
